@@ -111,3 +111,37 @@ def upload_document(project_id):
     db.session.add(doc)
     db.session.commit()
     return jsonify(doc.to_dict()), 201
+
+
+@bp.route("/<int:project_id>/documents/<int:document_id>", methods=["DELETE"])
+def delete_document(project_id, document_id):
+    """
+    Delete a document
+    ---
+    tags:
+      - Documents
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: document_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      204:
+        description: Document deleted
+      404:
+        description: Project or document not found
+    """
+    Project.query.get_or_404(project_id)
+    doc = Document.query.filter_by(id=document_id, project_id=project_id).first_or_404()
+
+    file_path = Path(doc.file_path)
+    if file_path.is_file():
+        file_path.unlink(missing_ok=True)
+
+    db.session.delete(doc)
+    db.session.commit()
+    return "", 204

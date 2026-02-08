@@ -81,6 +81,7 @@ cd backend && FLASK_RELOAD=1 python3 run.py
 | POST | `/api/v1/projects/:id/conversations/:cid/messages` | Thêm message (body: `{"role":"user","content":"..."}`) |
 | POST | `/api/v1/projects/:id/documents` | Upload document (form: file, optional conversation_id) |
 | GET | `/api/v1/projects/:id/documents` | Danh sách documents |
+| DELETE | `/api/v1/projects/:id/documents/:doc_id` | Xóa document |
 | POST | `/api/v1/projects/:id/analyze` | Chạy analysis (body: `{"document_id": 1, "conversation_id": 1}`) |
 | GET | `/api/v1/analyses/:id` | Lấy kết quả analysis |
 
