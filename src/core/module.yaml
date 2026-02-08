@@ -1,0 +1,34 @@
+# BAWS Core Module
+# Core framework settings; shared by all modules and agents.
+# Ref: BMAD src/core/module.yaml
+
+code: core
+name: "BAWS Core"
+
+header: "BAWS Core Configuration"
+subheader: "Configure core settings for your BAWS installation. Used across all modules and agents."
+
+user_name:
+  prompt: "What should agents call you? (Use your name or a team name)"
+  default: "User"
+  result: "{value}"
+
+communication_language:
+  prompt: "What language should agents use when chatting with you?"
+  default: "English"
+  result: "{value}"
+
+document_output_language:
+  prompt: "Preferred language for generated documents and reports?"
+  default: "English"
+  result: "{value}"
+
+output_folder:
+  prompt: "Where should output files (reports, JSON, analysis) be saved?"
+  default: "data/output"
+  result: "{project-root}/{value}"
+
+database_path:
+  prompt: "Where should the local database be stored?"
+  default: "data/database"
+  result: "{project-root}/{value}"

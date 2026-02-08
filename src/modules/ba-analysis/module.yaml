@@ -1,0 +1,30 @@
+# BA Analysis Module
+# Document analysis, multi-agent orchestration (Alex, Emma, Sarah, David, Paul).
+# Ref: BMAD src/bmm/module.yaml
+
+code: ba-analysis
+name: "BAWS BA Analysis"
+description: "AI-powered document analysis with multi-agent validation (Requirements, Stakeholder, Compliance, Traceability)"
+default_selected: true
+
+# Variables from Core Config inserted:
+# - user_name
+# - communication_language
+# - document_output_language
+# - output_folder
+# - database_path
+
+project_name:
+  prompt: "What is your analysis project called?"
+  default: "{directory_name}"
+  result: "{value}"
+
+analysis_output:
+  prompt: "Where should analysis reports (JSON, console dumps) be saved?"
+  default: "{output_folder}/analysis"
+  result: "{project-root}/{value}"
+
+documents_path:
+  prompt: "Where should uploaded/processed documents be stored?"
+  default: "data/documents"
+  result: "{project-root}/{value}"

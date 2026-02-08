@@ -4,3 +4,4 @@ node_modules/
 *.log
 .DS_Store
 data/
+_config/config.yaml
