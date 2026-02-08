@@ -11,7 +11,21 @@ VERSION = "1.0.0"
 
 @bp.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint. Returns version and DB status."""
+    """
+    Health check
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: Service status and DB connection
+        schema:
+          type: object
+          properties:
+            status: { type: string, example: ok }
+            version: { type: string }
+            database: { type: string }
+    """
     db_ok = True
     try:
         db.session.execute(text("SELECT 1"))

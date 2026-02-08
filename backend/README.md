@@ -42,6 +42,8 @@ python3 backend/run.py
 
 Server mặc định chạy tại: **http://localhost:5000**
 
+**Swagger UI (Flasgger):** Mở **http://localhost:5000/apidocs** để xem và gọi thử API.
+
 ### Biến môi trường
 
 | Biến | Mặc định | Mô tả |
@@ -70,9 +72,16 @@ cd backend && FLASK_RELOAD=1 python3 run.py
 | GET | `/api/v1/projects/:id` | Chi tiết project |
 | PUT | `/api/v1/projects/:id` | Cập nhật project |
 | DELETE | `/api/v1/projects/:id` | Xóa project |
-| POST | `/api/v1/projects/:id/documents` | Upload document |
+| GET | `/api/v1/projects/:id/conversations` | Danh sách conversations |
+| POST | `/api/v1/projects/:id/conversations` | Tạo conversation (body: `{"title": "..."}`) |
+| GET | `/api/v1/projects/:id/conversations/:cid` | Chi tiết conversation |
+| PUT | `/api/v1/projects/:id/conversations/:cid` | Cập nhật conversation |
+| DELETE | `/api/v1/projects/:id/conversations/:cid` | Xóa conversation |
+| GET | `/api/v1/projects/:id/conversations/:cid/messages` | Danh sách messages |
+| POST | `/api/v1/projects/:id/conversations/:cid/messages` | Thêm message (body: `{"role":"user","content":"..."}`) |
+| POST | `/api/v1/projects/:id/documents` | Upload document (form: file, optional conversation_id) |
 | GET | `/api/v1/projects/:id/documents` | Danh sách documents |
-| POST | `/api/v1/projects/:id/analyze` | Chạy analysis (body: `{"document_id": 1}`) |
+| POST | `/api/v1/projects/:id/analyze` | Chạy analysis (body: `{"document_id": 1, "conversation_id": 1}`) |
 | GET | `/api/v1/analyses/:id` | Lấy kết quả analysis |
 
 ## Data

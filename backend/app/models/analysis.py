@@ -12,6 +12,7 @@ class Analysis(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
     document_id = db.Column(db.Integer, db.ForeignKey("documents.id"), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey("conversations.id"), nullable=True)
     status = db.Column(db.String(32), default="pending")  # pending, running, completed, failed
     agent_results = db.Column(db.JSON, nullable=True)
     error_message = db.Column(db.Text, nullable=True)
@@ -25,6 +26,7 @@ class Analysis(db.Model):
             "id": self.id,
             "project_id": self.project_id,
             "document_id": self.document_id,
+            "conversation_id": self.conversation_id,
             "status": self.status,
             "agent_results": self.agent_results,
             "error_message": self.error_message,

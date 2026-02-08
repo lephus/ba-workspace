@@ -14,6 +14,7 @@ class Project(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    conversations = db.relationship("Conversation", back_populates="project", cascade="all, delete-orphan")
     documents = db.relationship("Document", back_populates="project", cascade="all, delete-orphan")
     analyses = db.relationship("Analysis", back_populates="project", cascade="all, delete-orphan")
 

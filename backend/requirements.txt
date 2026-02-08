@@ -6,3 +6,4 @@ python-dotenv
 google-generativeai
 PyPDF2
 python-docx
+flasgger

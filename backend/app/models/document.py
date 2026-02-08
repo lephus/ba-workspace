@@ -11,6 +11,7 @@ class Document(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey("conversations.id"), nullable=True)
     filename = db.Column(db.String(512), nullable=False)
     file_path = db.Column(db.String(1024), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -22,6 +23,7 @@ class Document(db.Model):
         return {
             "id": self.id,
             "project_id": self.project_id,
+            "conversation_id": self.conversation_id,
             "filename": self.filename,
             "file_path": self.file_path,
             "created_at": self.created_at.isoformat() if self.created_at else None,

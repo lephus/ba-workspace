@@ -4,7 +4,7 @@ from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, request
 
-from app.models import Document, Project, db
+from app.models import Conversation, Document, Project, db
 from app.services.config_loader import get_config
 from app.services.document_parser import ALLOWED_EXTENSIONS
 
@@ -18,7 +18,22 @@ def _get_documents_path():
 
 @bp.route("/<int:project_id>/documents", methods=["GET"])
 def list_documents(project_id):
-    """List documents for a project."""
+    """
+    List documents for a project
+    ---
+    tags:
+      - Documents
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: List of documents
+      404:
+        description: Project not found
+    """
     Project.query.get_or_404(project_id)
     docs = Document.query.filter_by(project_id=project_id).order_by(Document.created_at.desc()).all()
     return jsonify([d.to_dict() for d in docs])
@@ -26,7 +41,34 @@ def list_documents(project_id):
 
 @bp.route("/<int:project_id>/documents", methods=["POST"])
 def upload_document(project_id):
-    """Upload a document to a project."""
+    """
+    Upload a document
+    ---
+    tags:
+      - Documents
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: file
+        in: formData
+        type: file
+        required: true
+      - name: conversation_id
+        in: formData
+        type: integer
+        required: false
+    consumes:
+      - multipart/form-data
+    responses:
+      201:
+        description: Created document
+      400:
+        description: No file or unsupported format (pdf, docx, txt)
+      404:
+        description: Project not found
+    """
     project = Project.query.get_or_404(project_id)
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -50,8 +92,19 @@ def upload_document(project_id):
     file_path = project_dir / unique_name
     file.save(str(file_path))
 
+    conversation_id = None
+    if request.form.get("conversation_id"):
+        try:
+            cid = int(request.form["conversation_id"])
+            conv = Conversation.query.filter_by(id=cid, project_id=project_id).first()
+            if conv:
+                conversation_id = cid
+        except (ValueError, TypeError):
+            pass
+
     doc = Document(
         project_id=project_id,
+        conversation_id=conversation_id,
         filename=file.filename,
         file_path=str(file_path),
     )
