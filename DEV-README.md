@@ -172,3 +172,23 @@ The step files under `src/modules/ba-analysis/workflows/analyze-document/steps/`
 - Help: `node tools/baws-cli.js --help`; version: `node tools/baws-cli.js -V`
 
 The rest of the architecture is in place so that the `analyze` command and pipeline can be implemented without moving files around; add code under `src/lib/` and a new command under `tools/commands/analyze.js` when ready.
+
+---
+
+## 8. Backend (Flask) & Frontend (Next.js)
+
+### Backend
+
+Xem [backend/README.md](backend/README.md) để chạy backend đúng cách.
+
+**Tóm tắt:**
+1. `cd backend && pip install -r requirements.txt`
+2. Thêm `GEMINI_API_KEY` vào `.env` ở workspace root
+3. `cd backend && python3 run.py` – server tại `http://localhost:5000`
+
+**Lưu ý:** Chạy từ thư mục `backend/` hoặc dùng `python3 backend/run.py` từ root.
+
+### Frontend
+
+1. `cd frontend && npm install`
+2. `npm run dev` – chạy tại `http://localhost:3000` (proxy API sang backend)

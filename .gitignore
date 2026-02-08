@@ -5,3 +5,7 @@ node_modules/
 .DS_Store
 data/
 _config/config.yaml
+backend/__pycache__/
+backend/**/__pycache__/
+frontend/node_modules/
+frontend/.next/

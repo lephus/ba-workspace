@@ -1,0 +1,47 @@
+"""Base agent logic - load YAML and build prompt from persona."""
+import os
+from pathlib import Path
+
+import yaml
+
+# Agent YAML path relative to project root
+AGENTS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "src" / "modules" / "ba-analysis" / "agents"
+
+AGENT_FILES = {
+    "alex": "alex.agent.yaml",
+    "emma": "emma.agent.yaml",
+    "sarah": "sarah.agent.yaml",
+    "david": "david.agent.yaml",
+    "paul": "paul.agent.yaml",
+}
+
+
+def load_agent_yaml(agent_name: str) -> dict:
+    """Load agent YAML and return parsed config."""
+    if agent_name not in AGENT_FILES:
+        raise ValueError(f"Unknown agent: {agent_name}")
+    path = AGENTS_DIR / AGENT_FILES[agent_name]
+    if not path.exists():
+        raise FileNotFoundError(f"Agent config not found: {path}")
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def build_system_prompt(agent_name: str) -> str:
+    """Build system prompt from agent YAML persona."""
+    data = load_agent_yaml(agent_name)
+    agent = data.get("agent", {})
+    persona = agent.get("persona", {})
+
+    parts = []
+    if persona.get("role"):
+        parts.append(f"Role: {persona['role']}")
+    if persona.get("identity"):
+        parts.append(f"Identity: {persona['identity']}")
+    if persona.get("communication_style"):
+        parts.append(f"Communication style: {persona['communication_style']}")
+    if persona.get("principles"):
+        parts.append(f"Principles:\n{persona['principles']}")
+
+    parts.append("\nAnalyze the provided document and return your analysis in a clear, structured format.")
+    return "\n\n".join(parts)
