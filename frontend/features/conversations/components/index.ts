@@ -5,3 +5,4 @@ export { ConversationSidebar } from "./conversation-sidebar";
 export { ChatArea } from "./chat-area";
 export { ChatInput } from "./chat-input";
 export { MessageBubble } from "./message-bubble";
+export { AgentPanel } from "./agent-panel";
