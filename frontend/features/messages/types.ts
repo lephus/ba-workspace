@@ -28,7 +28,19 @@ export interface SendMessageResponse {
   };
 }
 
+export interface StructuredContent {
+  content_type: "text";
+  parts: string[];
+}
+
 export interface SendMessageInput {
   role: "user";
-  content: string;
+  content: StructuredContent;
+}
+
+export interface PinnedMessage {
+  id: number;
+  message_id: number;
+  message_preview: string;
+  pinned_at: string;
 }

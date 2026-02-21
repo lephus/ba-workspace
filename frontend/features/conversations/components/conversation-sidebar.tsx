@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   PanelLeftClose,
   PanelLeft,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,7 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useConversations } from "@/features/conversations/hooks";
+import { useConversations, useTogglePinConversation } from "@/features/conversations/hooks";
 import type { Conversation } from "@/features/conversations/types";
 import { ConversationDialog } from "./conversation-dialog";
 import { DeleteConversationDialog } from "./delete-conversation-dialog";
@@ -51,6 +53,10 @@ export function ConversationSidebar({
     : null;
 
   const { data: conversations, isLoading } = useConversations(projectId);
+  const togglePin = useTogglePinConversation(projectId);
+
+  const pinnedConversations = conversations?.filter((c) => c.pinned) || [];
+  const unpinnedConversations = conversations?.filter((c) => !c.pinned) || [];
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -74,6 +80,15 @@ export function ConversationSidebar({
     e.preventDefault();
     setSelectedConversation(conversation);
     setDeleteDialogOpen(true);
+  };
+
+  const handlePin = (e: React.MouseEvent, conversation: Conversation) => {
+    e.stopPropagation();
+    e.preventDefault();
+    togglePin.mutate({
+      conversationId: conversation.id,
+      pinned: !conversation.pinned,
+    });
   };
 
   const handleConversationCreated = (conversation: Conversation) => {
@@ -144,7 +159,7 @@ export function ConversationSidebar({
         </div>
 
         {/* Conversation list */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-2 space-y-1">
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
@@ -170,54 +185,127 @@ export function ConversationSidebar({
                 </Button>
               </div>
             ) : (
-              conversations.map((conversation) => {
-                const isActive = conversation.id === activeConversationId;
-                return (
-                  <Link
-                    key={conversation.id}
-                    href={`/projects/${projectId}/conversations/${conversation.id}`}
-                    className={cn(
-                      "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
-                      isActive && "bg-accent"
-                    )}
-                  >
-                    <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="flex-1 truncate">
-                      {conversation.title}
-                    </span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
+              <>
+                {pinnedConversations.length > 0 && (
+                  <>
+                    <p className="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Pin className="size-3" />
+                      Đã ghim
+                    </p>
+                    {pinnedConversations.map((conversation) => {
+                      const isActive = conversation.id === activeConversationId;
+                      return (
+                        <Link
+                          key={conversation.id}
+                          href={`/projects/${projectId}/conversations/${conversation.id}`}
                           className={cn(
-                            "size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
-                            isActive && "opacity-100"
+                            "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
+                            isActive && "bg-accent"
                           )}
-                          onClick={(e) => e.preventDefault()}
                         >
-                          <MoreHorizontal className="size-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" side="right">
-                        <DropdownMenuItem
-                          onClick={(e) => handleEdit(e, conversation)}
-                        >
-                          <Pencil className="size-4" />
-                          Đổi tên
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => handleDelete(e, conversation)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="size-4" />
-                          Xóa
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </Link>
-                );
-              })
+                          <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+                          <span className="flex-1 truncate">
+                            {conversation.title}
+                          </span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                                  isActive && "opacity-100"
+                                )}
+                                onClick={(e) => e.preventDefault()}
+                              >
+                                <MoreHorizontal className="size-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" side="right">
+                              <DropdownMenuItem
+                                onClick={(e) => handlePin(e, conversation)}
+                              >
+                                <PinOff className="size-4" />
+                                Bỏ ghim
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => handleEdit(e, conversation)}
+                              >
+                                <Pencil className="size-4" />
+                                Đổi tên
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => handleDelete(e, conversation)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="size-4" />
+                                Xóa
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </Link>
+                      );
+                    })}
+                    {unpinnedConversations.length > 0 && (
+                      <div className="my-1 border-t" />
+                    )}
+                  </>
+                )}
+                {unpinnedConversations.map((conversation) => {
+                  const isActive = conversation.id === activeConversationId;
+                  return (
+                    <Link
+                      key={conversation.id}
+                      href={`/projects/${projectId}/conversations/${conversation.id}`}
+                      className={cn(
+                        "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
+                        isActive && "bg-accent"
+                      )}
+                    >
+                      <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 truncate">
+                        {conversation.title}
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                              isActive && "opacity-100"
+                            )}
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <MoreHorizontal className="size-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" side="right">
+                          <DropdownMenuItem
+                            onClick={(e) => handlePin(e, conversation)}
+                          >
+                            <Pin className="size-4" />
+                            Ghim
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => handleEdit(e, conversation)}
+                          >
+                            <Pencil className="size-4" />
+                            Đổi tên
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => handleDelete(e, conversation)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="size-4" />
+                            Xóa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </Link>
+                  );
+                })}
+              </>
             )}
           </div>
         </ScrollArea>

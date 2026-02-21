@@ -1,10 +1,22 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { MessageSquare } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MessageSquare, Pin, ChevronDown, ChevronUp, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMessages, useSendMessage } from "@/features/messages/hooks";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  useMessages,
+  useSendMessage,
+  usePinnedMessages,
+  usePinMessage,
+  useUnpinMessage,
+} from "@/features/messages/hooks";
 import { useConversation } from "@/features/conversations/hooks";
 import { MessageBubble } from "./message-bubble";
 import { ChatInput } from "./chat-input";
@@ -51,35 +63,134 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
   } = useMessages(projectId, conversationId);
 
   const { data: conversation } = useConversation(projectId, conversationId);
+  const { data: pinnedMessages } = usePinnedMessages(projectId, conversationId);
 
   const sendMessage = useSendMessage(projectId, conversationId);
+  const pinMessage = usePinMessage(projectId, conversationId);
+  const unpinMessage = useUnpinMessage(projectId, conversationId);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [pinnedPanelOpen, setPinnedPanelOpen] = useState(false);
+
+  const pinnedMessageIds = useMemo(
+    () => new Set(pinnedMessages?.map((p) => p.message_id) ?? []),
+    [pinnedMessages]
+  );
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when new messages arrive
+  // Scroll to bottom when messages change (new message, optimistic update, server response)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // Small delay to ensure DOM is painted before scrolling
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [messages, sendMessage.isPending]);
 
   const handleSend = (content: string) => {
-    sendMessage.mutate({ role: "user", content });
+    sendMessage.mutate({
+      role: "user",
+      content: {
+        content_type: "text",
+        parts: content.split("\n").filter((line) => line.trim() !== ""),
+      },
+    });
+  };
+
+  const handlePin = (messageId: number) => {
+    pinMessage.mutate(messageId);
+  };
+
+  const handleUnpin = (messageId: number) => {
+    unpinMessage.mutate(messageId);
+  };
+
+  const scrollToMessage = (messageId: number) => {
+    const el = document.getElementById(`message-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("bg-amber-50", "dark:bg-amber-950/30");
+      setTimeout(() => {
+        el.classList.remove("bg-amber-50", "dark:bg-amber-950/30");
+      }, 2000);
+    }
+    setPinnedPanelOpen(false);
   };
 
   return (
     <div className="flex flex-col h-full min-w-0">
       {/* Chat header */}
-      <div className="flex items-center gap-3 px-6 py-3 shrink-0">
-        <MessageSquare className="size-5 text-muted-foreground" />
-        <div className="min-w-0">
-          <h2 className="font-semibold text-sm truncate">
-            {conversation?.title || "Cuộc hội thoại"}
-          </h2>
+      <div className="shrink-0 border-b">
+        <div className="flex items-center gap-3 px-6 py-3">
+          <MessageSquare className="size-5 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-sm truncate">
+              {conversation?.title || "Cuộc hội thoại"}
+            </h2>
+          </div>
+          {pinnedMessages && pinnedMessages.length > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => setPinnedPanelOpen(!pinnedPanelOpen)}
+                >
+                  <Pin className="size-3.5 text-amber-500" />
+                  <span>{pinnedMessages.length}</span>
+                  {pinnedPanelOpen ? (
+                    <ChevronUp className="size-3" />
+                  ) : (
+                    <ChevronDown className="size-3" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Tin nhắn đã ghim</TooltipContent>
+            </Tooltip>
+          )}
         </div>
+
+        {/* Pinned messages panel */}
+        {pinnedPanelOpen && pinnedMessages && pinnedMessages.length > 0 && (
+          <div className="border-t bg-amber-50/50 dark:bg-amber-950/20 px-6 py-2 max-h-40 overflow-y-auto">
+            <div className="space-y-1.5">
+              {pinnedMessages.map((pin) => (
+                <div
+                  key={pin.id}
+                  className="flex items-center gap-2 group/pin"
+                >
+                  <button
+                    className="flex-1 min-w-0 flex items-center gap-2 text-left text-xs hover:bg-amber-100/50 dark:hover:bg-amber-900/20 rounded px-2 py-1 transition-colors"
+                    onClick={() => scrollToMessage(pin.message_id)}
+                  >
+                    <Pin className="size-3 text-amber-500 shrink-0" />
+                    <span className="truncate text-muted-foreground">
+                      {pin.message_preview}
+                    </span>
+                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-5 opacity-0 group-hover/pin:opacity-100 transition-opacity shrink-0"
+                        onClick={() => handleUnpin(pin.message_id)}
+                      >
+                        <X className="size-3 text-muted-foreground" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">Bỏ ghim</TooltipContent>
+                  </Tooltip>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Messages area */}
-      <ScrollArea className="flex-1" ref={scrollRef}>
+      <ScrollArea className="flex-1 min-h-0">
         <div className="mx-auto max-w-3xl">
           {messagesLoading ? (
             <ChatSkeleton />
@@ -104,7 +215,14 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
           ) : (
             <div className="px-4 py-2">
               {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+                <div key={message.id} id={`message-${message.id}`} className="transition-colors duration-500 rounded-lg">
+                  <MessageBubble
+                    message={message}
+                    isPinned={pinnedMessageIds.has(message.id)}
+                    onPin={handlePin}
+                    onUnpin={handleUnpin}
+                  />
+                </div>
               ))}
               {sendMessage.isPending && (
                 <div className="flex gap-3 py-4">

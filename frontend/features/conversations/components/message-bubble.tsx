@@ -1,15 +1,28 @@
 "use client";
 
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bot, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Bot, User, Copy, Check, Pin, PinOff } from "lucide-react";
 import type { Message } from "@/features/messages/types";
 
 interface MessageBubbleProps {
   message: Message;
+  isPinned?: boolean;
+  onPin?: (messageId: number) => void;
+  onUnpin?: (messageId: number) => void;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
 
@@ -23,10 +36,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     );
   }
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div
       className={cn(
-        "flex gap-3 py-4",
+        "group/message flex gap-3 py-4",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
@@ -69,13 +90,91 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words",
+            "rounded-2xl px-4 py-2.5 text-sm wrap-break-word relative",
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-md"
-              : "bg-muted rounded-tl-md"
+              ? "bg-primary text-primary-foreground rounded-tr-md whitespace-pre-wrap leading-relaxed"
+              : "bg-muted rounded-tl-md",
+            isPinned && "ring-1 ring-amber-400/50"
           )}
         >
-          {message.content}
+          {isPinned && (
+            <Pin className="size-3 text-amber-500 absolute -top-1.5 -right-1.5" />
+          )}
+          {isUser ? (
+            message.content
+          ) : (
+            <div className="prose-chat">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div
+          className={cn(
+            "flex items-center gap-1 transition-opacity",
+            copied
+              ? "opacity-100"
+              : "opacity-0 group-hover/message:opacity-100"
+          )}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6"
+                onClick={handleCopy}
+              >
+                {copied ? (
+                  <Check className="size-3 text-green-500" />
+                ) : (
+                  <Copy className="size-3 text-muted-foreground" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {copied ? "Đã sao chép" : "Sao chép"}
+            </TooltipContent>
+          </Tooltip>
+          {isPinned ? (
+            onUnpin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-6"
+                    onClick={() => onUnpin(message.id)}
+                  >
+                    <PinOff className="size-3 text-amber-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Bỏ ghim</TooltipContent>
+              </Tooltip>
+            )
+          ) : (
+            onPin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-6"
+                    onClick={() => onPin(message.id)}
+                  >
+                    <Pin className="size-3 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Ghim</TooltipContent>
+              </Tooltip>
+            )
+          )}
         </div>
       </div>
     </div>

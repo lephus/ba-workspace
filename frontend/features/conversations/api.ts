@@ -121,3 +121,51 @@ export async function deleteConversationApi(
     throw new Error("Không thể xóa cuộc hội thoại");
   }
 }
+
+// PUT /projects/:projectId/conversations/:conversationId/pin
+export async function pinConversationApi(
+  projectId: number,
+  conversationId: number,
+  pinned: boolean
+): Promise<Conversation> {
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/conversations/${conversationId}/pin`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pinned }),
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Không tìm thấy cuộc hội thoại");
+    }
+    throw new Error("Không thể ghim cuộc hội thoại");
+  }
+
+  return response.json();
+}
+
+// DELETE /projects/:projectId/conversations/:conversationId/pin
+export async function unpinConversationApi(
+  projectId: number,
+  conversationId: number
+): Promise<Conversation> {
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/conversations/${conversationId}/pin`,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Không tìm thấy cuộc hội thoại");
+    }
+    throw new Error("Không thể bỏ ghim cuộc hội thoại");
+  }
+
+  return response.json();
+}
