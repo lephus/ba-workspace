@@ -2,11 +2,32 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getMessagesApi, sendMessageApi } from "./api";
-import type { Message, SendMessageInput, SendMessageResponse } from "./types";
+import {
+  getMessagesApi,
+  sendMessageApi,
+  getPinnedMessagesApi,
+  pinMessageApi,
+  unpinMessageApi,
+} from "./api";
+import type {
+  Message,
+  SendMessageInput,
+  SendMessageResponse,
+  PinnedMessage,
+} from "./types";
 
 function messagesKey(projectId: number, conversationId: number) {
   return ["projects", projectId, "conversations", conversationId, "messages"];
+}
+
+function pinnedMessagesKey(projectId: number, conversationId: number) {
+  return [
+    "projects",
+    projectId,
+    "conversations",
+    conversationId,
+    "pinned-messages",
+  ];
 }
 
 // Hook lấy danh sách messages
@@ -76,6 +97,56 @@ export function useSendMessage(projectId: number, conversationId: number) {
         queryClient.setQueryData<Message[]>(key, context.previous);
       }
       toast.error(_error.message || "Gửi tin nhắn thất bại");
+    },
+  });
+}
+
+// Hook lấy danh sách pinned messages
+export function usePinnedMessages(
+  projectId: number,
+  conversationId: number
+) {
+  return useQuery({
+    queryKey: pinnedMessagesKey(projectId, conversationId),
+    queryFn: () => getPinnedMessagesApi(projectId, conversationId),
+    enabled: !!projectId && !!conversationId,
+  });
+}
+
+// Hook ghim tin nhắn
+export function usePinMessage(projectId: number, conversationId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (messageId: number) =>
+      pinMessageApi(projectId, conversationId, messageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: pinnedMessagesKey(projectId, conversationId),
+      });
+      toast.success("Đã ghim tin nhắn");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Ghim tin nhắn thất bại");
+    },
+  });
+}
+
+// Hook bỏ ghim tin nhắn
+export function useUnpinMessage(projectId: number, conversationId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (messageId: number) =>
+      unpinMessageApi(projectId, conversationId, messageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: pinnedMessagesKey(projectId, conversationId),
+      });
+      toast.success("Đã bỏ ghim tin nhắn");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Bỏ ghim tin nhắn thất bại");
     },
   });
 }

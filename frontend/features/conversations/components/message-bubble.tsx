@@ -12,14 +12,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Bot, User, Copy, Check } from "lucide-react";
+import { Bot, User, Copy, Check, Pin, PinOff } from "lucide-react";
 import type { Message } from "@/features/messages/types";
 
 interface MessageBubbleProps {
   message: Message;
+  isPinned?: boolean;
+  onPin?: (messageId: number) => void;
+  onUnpin?: (messageId: number) => void;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
 
@@ -87,12 +90,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm wrap-break-word",
+            "rounded-2xl px-4 py-2.5 text-sm wrap-break-word relative",
             isUser
               ? "bg-primary text-primary-foreground rounded-tr-md whitespace-pre-wrap leading-relaxed"
-              : "bg-muted rounded-tl-md"
+              : "bg-muted rounded-tl-md",
+            isPinned && "ring-1 ring-amber-400/50"
           )}
         >
+          {isPinned && (
+            <Pin className="size-3 text-amber-500 absolute -top-1.5 -right-1.5" />
+          )}
           {isUser ? (
             message.content
           ) : (
@@ -107,7 +114,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           )}
         </div>
 
-        {/* Copy button */}
+        {/* Action buttons */}
         <div
           className={cn(
             "flex items-center gap-1 transition-opacity",
@@ -135,6 +142,39 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               {copied ? "Đã sao chép" : "Sao chép"}
             </TooltipContent>
           </Tooltip>
+          {isPinned ? (
+            onUnpin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-6"
+                    onClick={() => onUnpin(message.id)}
+                  >
+                    <PinOff className="size-3 text-amber-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Bỏ ghim</TooltipContent>
+              </Tooltip>
+            )
+          ) : (
+            onPin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-6"
+                    onClick={() => onPin(message.id)}
+                  >
+                    <Pin className="size-3 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Ghim</TooltipContent>
+              </Tooltip>
+            )
+          )}
         </div>
       </div>
     </div>

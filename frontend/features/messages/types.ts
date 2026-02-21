@@ -37,3 +37,10 @@ export interface SendMessageInput {
   role: "user";
   content: StructuredContent;
 }
+
+export interface PinnedMessage {
+  id: number;
+  message_id: number;
+  message_preview: string;
+  pinned_at: string;
+}
