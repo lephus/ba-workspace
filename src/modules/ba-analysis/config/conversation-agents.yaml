@@ -1,0 +1,76 @@
+# Config for 4 conversation agents – used to infer which agent(s) handle user questions or input.
+# The system may select one or multiple agents to collaborate on a response.
+
+description: |
+  When the user sends a question, answer, or information, the system infers which agent(s) to use.
+  Multiple agents may be selected to collaborate on the reply.
+
+routing:
+  allow_multiple: true   # Allow multiple agents to handle a single request
+  strategy: infer        # infer = use LLM to select agent(s) from content
+
+agents:
+  - id: paul
+    name: Paul
+    avatar: "https://res.cloudinary.com/gr3atcode/image/upload/v1771649420/Paul_ppffqv.png"
+    responsibility: Traceability Relationships
+    description: |
+      Focus on traceability: linking requirements to stakeholders and deliverables,
+      finding missing links, orphaned items, impact analysis.
+    keywords:
+      - traceability
+      - RTM
+      - relationships
+      - links
+      - impact analysis
+      - orphaned
+      - coverage
+      - traceability matrix
+
+  - id: emma
+    name: Emma
+    avatar: "https://res.cloudinary.com/gr3atcode/image/upload/v1771649419/Emma_pat3ft.png"
+    responsibility: Requirements Validation
+    description: |
+      Validates requirements: consistency, clarity, completeness; SMART criteria,
+      no conflicts, acceptance criteria; detects duplicates and gaps.
+    keywords:
+      - requirements
+      - validation
+      - SMART
+      - clarity
+      - completeness
+      - acceptance criteria
+      - conflicts
+      - requirements verification
+
+  - id: sarah
+    name: Sarah
+    avatar: "https://res.cloudinary.com/gr3atcode/image/upload/v1771649419/Sarah_fyqbgy.png"
+    responsibility: Stakeholders Mapping
+    description: |
+      Maps stakeholders: needs, interest/influence, alignment gaps
+      between requirements and stakeholder needs.
+    keywords:
+      - stakeholders
+      - mapping
+      - interest
+      - influence
+      - alignment
+      - needs
+      - stakeholder analysis
+
+  - id: david
+    name: David
+    avatar: "https://res.cloudinary.com/gr3atcode/image/upload/v1771649419/David_fy6qow.png"
+    responsibility: Compliance BABOK Check
+    description: |
+      Checks BABOK compliance and BA best practices; document structure, missing artifacts.
+    keywords:
+      - BABOK
+      - compliance
+      - best practices
+      - standards
+      - audit
+      - artifacts
+      - BA standards

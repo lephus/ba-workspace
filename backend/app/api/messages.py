@@ -2,9 +2,18 @@
 from flask import Blueprint, jsonify, request
 
 from app.models import Conversation, Message, Project, db
-from app.services.conversation_agent import get_agent_reply
+from app.services.content_normalizer import normalize_user_content
+from app.services.conversation_agent import get_agent_reply, get_conversation_bot
 
 bp = Blueprint("messages", __name__)
+
+
+def _message_with_bot(msg: Message) -> dict:
+    """Return message dict with bot (avatar, name, role) for assistant messages."""
+    d = msg.to_dict()
+    if msg.role == "assistant":
+        d["bot"] = get_conversation_bot(msg.agent_id)
+    return d
 
 
 @bp.route("/<int:project_id>/conversations/<int:conversation_id>/messages", methods=["GET"])
@@ -33,7 +42,7 @@ def list_messages(project_id, conversation_id):
         id=conversation_id, project_id=project_id
     ).first_or_404()
     msgs = Message.query.filter_by(conversation_id=conv.id).order_by(Message.created_at.asc()).all()
-    return jsonify([m.to_dict() for m in msgs])
+    return jsonify([_message_with_bot(m) for m in msgs])
 
 
 @bp.route("/<int:project_id>/conversations/<int:conversation_id>/messages", methods=["POST"])
@@ -62,10 +71,28 @@ def create_message(project_id, conversation_id):
           required: [role, content]
           properties:
             role: { type: string, enum: [user, assistant, system] }
-            content: { type: string }
+            content:
+              description: |
+                Plain string or structured (GPT-style). Structured format:
+                { "content_type": "text", "parts": ["segment1", "segment2"] }.
+                parts = logical segments (paragraphs, bullets); backend joins with newlines for the prompt.
+              oneOf:
+                - type: string
+                - type: object
+                  required: [content_type, parts]
+                  properties:
+                    content_type: { type: string, enum: [text] }
+                    parts: { type: array, items: { type: string }, maxItems: 50 }
+          example:
+            role: user
+            content:
+              content_type: text
+              parts:
+                - "We need to validate the login requirements."
+                - "Stakeholders: product owner, dev team."
     responses:
       201:
-        description: Created message; if role was user, includes assistant_message
+        description: Created message; if role was user, includes assistant_message and bot (name, avatar, role)
       400:
         description: role and content required; role must be user/assistant/system
       404:
@@ -82,7 +109,12 @@ def create_message(project_id, conversation_id):
     role = data["role"].strip().lower()
     if role not in ("user", "assistant", "system"):
         return jsonify({"error": "role must be user, assistant, or system"}), 400
-    content = data["content"]
+    try:
+        content = normalize_user_content(data["content"])
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    if not content:
+        return jsonify({"error": "content is empty after normalization"}), 400
 
     msg = Message(
         conversation_id=conv.id,
@@ -93,21 +125,25 @@ def create_message(project_id, conversation_id):
 
     if role == "user":
         try:
-            reply_text = get_agent_reply(conv.id, content)
+            reply_text, selected_agent_ids = get_agent_reply(conv.id, content)
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": f"Agent failed: {str(e)}"}), 500
+        primary_agent_id = selected_agent_ids[0] if selected_agent_ids else None
         assistant_msg = Message(
             conversation_id=conv.id,
             role="assistant",
             content=reply_text,
+            agent_id=primary_agent_id,
         )
         db.session.add(assistant_msg)
 
     db.session.commit()
 
-    payload = {"message": msg.to_dict()}
+    payload = {"message": _message_with_bot(msg)}
     if role == "user":
-        payload["assistant_message"] = assistant_msg.to_dict()
+        payload["assistant_message"] = _message_with_bot(assistant_msg)
+        payload["bot"] = get_conversation_bot(primary_agent_id)
+        payload["agents_involved"] = selected_agent_ids or []
 
     return jsonify(payload), 201

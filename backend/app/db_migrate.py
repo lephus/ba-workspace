@@ -16,3 +16,16 @@ def migrate_add_conversation_columns(app):
                     db.session.commit()
                 except Exception:
                     db.session.rollback()
+
+
+def migrate_add_message_agent_id(app):
+    """Add agent_id to messages if missing (for existing DBs)."""
+    with app.app_context():
+        try:
+            db.session.execute(text("SELECT agent_id FROM messages LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE messages ADD COLUMN agent_id VARCHAR(32)"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
