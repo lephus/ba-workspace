@@ -54,16 +54,25 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
 
   const sendMessage = useSendMessage(projectId, conversationId);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when new messages arrive
+  // Scroll to bottom when messages change (new message, optimistic update, server response)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // Small delay to ensure DOM is painted before scrolling
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [messages, sendMessage.isPending]);
 
   const handleSend = (content: string) => {
-    sendMessage.mutate({ role: "user", content });
+    sendMessage.mutate({
+      role: "user",
+      content: {
+        content_type: "text",
+        parts: content.split("\n").filter((line) => line.trim() !== ""),
+      },
+    });
   };
 
   return (
@@ -79,7 +88,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
       </div>
 
       {/* Messages area */}
-      <ScrollArea className="flex-1" ref={scrollRef}>
+      <ScrollArea className="flex-1 min-h-0">
         <div className="mx-auto max-w-3xl">
           {messagesLoading ? (
             <ChatSkeleton />

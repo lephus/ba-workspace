@@ -8,6 +8,8 @@ import {
   createConversationApi,
   updateConversationApi,
   deleteConversationApi,
+  pinConversationApi,
+  unpinConversationApi,
 } from "./api";
 import type {
   CreateConversationInput,
@@ -95,6 +97,33 @@ export function useDeleteConversation(projectId: number) {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Xóa cuộc hội thoại thất bại");
+    },
+  });
+}
+
+// Hook ghim/bỏ ghim conversation
+export function useTogglePinConversation(projectId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      conversationId,
+      pinned,
+    }: {
+      conversationId: number;
+      pinned: boolean;
+    }) =>
+      pinned
+        ? pinConversationApi(projectId, conversationId, true)
+        : unpinConversationApi(projectId, conversationId),
+    onSuccess: (_, { pinned }) => {
+      queryClient.invalidateQueries({
+        queryKey: conversationsKey(projectId),
+      });
+      toast.success(pinned ? "Đã ghim cuộc hội thoại" : "Đã bỏ ghim cuộc hội thoại");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Thao tác ghim thất bại");
     },
   });
 }

@@ -8,6 +8,8 @@ import {
   Plus,
   MessageSquare,
   ArrowLeft,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
-import { useConversations } from "@/features/conversations/hooks";
+import { useConversations, useTogglePinConversation } from "@/features/conversations/hooks";
 import type { Conversation } from "@/features/conversations/types";
 import { ConversationDialog } from "./conversation-dialog";
 import { DeleteConversationDialog } from "./delete-conversation-dialog";
@@ -89,6 +91,16 @@ export function ConversationList({
     error,
   } = useConversations(projectId);
 
+  const togglePin = useTogglePinConversation(projectId);
+
+  const sortedConversations = conversations
+    ? [...conversations].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return 0;
+      })
+    : undefined;
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] =
@@ -107,6 +119,13 @@ export function ConversationList({
   const handleDelete = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     setDeleteDialogOpen(true);
+  };
+
+  const handleTogglePin = (conversation: Conversation) => {
+    togglePin.mutate({
+      conversationId: conversation.id,
+      pinned: !conversation.pinned,
+    });
   };
 
   return (
@@ -151,7 +170,7 @@ export function ConversationList({
                 {error?.message || "Đã xảy ra lỗi khi tải dữ liệu."}
               </p>
             </div>
-          ) : !conversations || conversations.length === 0 ? (
+          ) : !sortedConversations || sortedConversations.length === 0 ? (
             <EmptyState onCreateClick={handleCreate} />
           ) : (
             <Table>
@@ -165,7 +184,7 @@ export function ConversationList({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {conversations.map((conversation) => (
+                {sortedConversations.map((conversation) => (
                   <TableRow key={conversation.id}>
                     <TableCell className="text-muted-foreground font-mono">
                       {conversation.id}
@@ -173,8 +192,11 @@ export function ConversationList({
                     <TableCell className="font-medium">
                       <Link
                         href={`/projects/${projectId}/conversations/${conversation.id}`}
-                        className="hover:underline"
+                        className="hover:underline inline-flex items-center gap-1.5"
                       >
+                        {conversation.pinned && (
+                          <Pin className="size-3.5 text-muted-foreground shrink-0" />
+                        )}
                         {conversation.title}
                       </Link>
                     </TableCell>
@@ -197,6 +219,21 @@ export function ConversationList({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleTogglePin(conversation)}
+                          >
+                            {conversation.pinned ? (
+                              <>
+                                <PinOff className="size-4" />
+                                Bỏ ghim
+                              </>
+                            ) : (
+                              <>
+                                <Pin className="size-4" />
+                                Ghim
+                              </>
+                            )}
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleEdit(conversation)}
                           >

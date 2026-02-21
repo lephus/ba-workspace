@@ -28,7 +28,12 @@ export interface SendMessageResponse {
   };
 }
 
+export interface StructuredContent {
+  content_type: "text";
+  parts: string[];
+}
+
 export interface SendMessageInput {
   role: "user";
-  content: string;
+  content: StructuredContent;
 }

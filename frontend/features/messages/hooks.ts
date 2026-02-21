@@ -21,26 +21,61 @@ export function useMessages(projectId: number, conversationId: number) {
 // Hook gửi message (tự động nhận assistant reply)
 export function useSendMessage(projectId: number, conversationId: number) {
   const queryClient = useQueryClient();
+  const key = messagesKey(projectId, conversationId);
 
   return useMutation({
     mutationFn: (data: SendMessageInput) =>
       sendMessageApi(projectId, conversationId, data),
-    onSuccess: (response: SendMessageResponse) => {
-      // Optimistic: append both user + assistant messages to cache
-      queryClient.setQueryData<Message[]>(
-        messagesKey(projectId, conversationId),
-        (old) => {
-          const messages = old ? [...old] : [];
-          messages.push(response.message);
-          if (response.assistant_message) {
-            messages.push(response.assistant_message);
-          }
-          return messages;
-        }
+    onMutate: async (data: SendMessageInput) => {
+      // Cancel outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: key });
+
+      const previous = queryClient.getQueryData<Message[]>(key);
+
+      // Build a temporary user message shown immediately
+      const optimisticContent =
+        typeof data.content === "string"
+          ? data.content
+          : data.content.parts.join("\n");
+
+      const optimisticMsg: Message = {
+        id: Date.now(), // temp id
+        conversation_id: conversationId,
+        role: "user",
+        content: optimisticContent,
+        created_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData<Message[]>(key, (old) =>
+        [...(old ?? []), optimisticMsg]
       );
+
+      return { previous };
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Gửi tin nhắn thất bại");
+    onSuccess: (response: SendMessageResponse) => {
+      // Replace optimistic data with real server data
+      queryClient.setQueryData<Message[]>(key, (old) => {
+        // Remove the optimistic user message (temp id) and append server messages
+        const withoutOptimistic = (old ?? []).filter(
+          (m) => m.id !== response.message.id && m.id >= 1e12
+            ? false // remove temp messages
+            : true
+        );
+        // Simpler: keep all real messages, remove temp ones, then append server response
+        const real = (old ?? []).filter((m) => m.id < 1e12);
+        const result = [...real, response.message];
+        if (response.assistant_message) {
+          result.push(response.assistant_message);
+        }
+        return result;
+      });
+    },
+    onError: (_error: Error, _data, context) => {
+      // Rollback to previous state
+      if (context?.previous) {
+        queryClient.setQueryData<Message[]>(key, context.previous);
+      }
+      toast.error(_error.message || "Gửi tin nhắn thất bại");
     },
   });
 }
