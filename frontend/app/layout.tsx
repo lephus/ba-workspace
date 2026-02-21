@@ -1,4 +1,5 @@
 import AppProvider from "@/config/app-provider";
+import { Toaster } from "@/components/ui/sonner";
 import './globals.css';
 
 export const metadata = {
@@ -16,8 +17,9 @@ export default function RootLayout({
       <body>
         <AppProvider>
           {children}
+          <Toaster />
         </AppProvider>
-        </body>
+      </body>
     </html>
   );
 }
