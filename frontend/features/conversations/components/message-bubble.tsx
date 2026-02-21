@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -53,6 +53,9 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
     >
       {/* Avatar */}
       <Avatar className="size-8 shrink-0 mt-0.5">
+        {!isUser && message.bot?.avatar && (
+          <AvatarImage src={message.bot.avatar} alt={message.bot.name} />
+        )}
         <AvatarFallback
           className={cn(
             "text-xs",
@@ -63,6 +66,8 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
         >
           {isUser ? (
             <User className="size-4" />
+          ) : message.bot?.name ? (
+            message.bot.name[0]
           ) : (
             <Bot className="size-4" />
           )}

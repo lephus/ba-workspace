@@ -20,6 +20,7 @@ import {
 import { useConversation } from "@/features/conversations/hooks";
 import { MessageBubble } from "./message-bubble";
 import { ChatInput } from "./chat-input";
+import { AgentPanel } from "./agent-panel";
 
 interface ChatAreaProps {
   projectId: number;
@@ -75,6 +76,16 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
     () => new Set(pinnedMessages?.map((p) => p.message_id) ?? []),
     [pinnedMessages]
   );
+
+  // Collect unique agent IDs from assistant messages
+  const activeAgentIds = useMemo(() => {
+    if (!messages) return [];
+    const ids = new Set<string>();
+    messages.forEach((m) => {
+      if (m.agent_id) ids.add(m.agent_id);
+    });
+    return Array.from(ids);
+  }, [messages]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -188,6 +199,9 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
           </div>
         )}
       </div>
+
+      {/* Agent team panel */}
+      <AgentPanel activeAgentIds={activeAgentIds} />
 
       {/* Messages area */}
       <ScrollArea className="flex-1 min-h-0">
