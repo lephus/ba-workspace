@@ -1,4 +1,4 @@
-# Config for 4 conversation agents – used to infer which agent(s) handle user questions or input.
+# Config for 5 conversation agents – used to infer which agent(s) handle user questions or input.
 # The system may select one or multiple agents to collaborate on a response.
 
 description: |
@@ -10,6 +10,23 @@ routing:
   strategy: infer        # infer = use LLM to select agent(s) from content
 
 agents:
+  - id: alex
+    name: Alex
+    avatar: "https://res.cloudinary.com/gr3atcode/image/upload/v1771653526/Alex_nyfyf4.png"
+    responsibility: Coordination & Synthesis
+    description: |
+      Senior BA and coordinator; synthesizes inputs and owns final recommendations.
+      Handles general BA questions, orchestration, and when no specialist clearly fits.
+    keywords:
+      - coordinator
+      - synthesis
+      - overview
+      - senior BA
+      - recommendation
+      - orchestration
+      - general
+      - strategy
+
   - id: paul
     name: Paul
     avatar: "https://res.cloudinary.com/gr3atcode/image/upload/v1771649420/Paul_ppffqv.png"
