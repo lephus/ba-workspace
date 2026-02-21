@@ -4,8 +4,10 @@ from pathlib import Path
 
 import yaml
 
-# Agent YAML path relative to project root
-AGENTS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "src" / "modules" / "ba-analysis" / "agents"
+# Paths relative to ba-analysis module (agents and prompts)
+_BA_ANALYSIS_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "src" / "modules" / "ba-analysis"
+AGENTS_DIR = _BA_ANALYSIS_ROOT / "agents"
+PROMPTS_DIR = _BA_ANALYSIS_ROOT / "prompts"
 
 AGENT_FILES = {
     "alex": "alex.agent.yaml",
@@ -42,7 +44,7 @@ def get_agent_bot_info(agent_name: str) -> dict:
 
 
 def build_system_prompt(agent_name: str) -> str:
-    """Build system prompt from agent YAML persona."""
+    """Build system prompt from agent YAML persona and optional prompt_file."""
     data = load_agent_yaml(agent_name)
     agent = data.get("agent", {})
     persona = agent.get("persona", {})
@@ -57,5 +59,17 @@ def build_system_prompt(agent_name: str) -> str:
     if persona.get("principles"):
         parts.append(f"Principles:\n{persona['principles']}")
 
-    parts.append("\nAnalyze the provided document and return your analysis in a clear, structured format.")
+    # Load prompt_file from activation if present (e.g. ../prompts/alex.prompt.txt)
+    activation = agent.get("activation", {})
+    prompt_file = activation.get("prompt_file")
+    if prompt_file and PROMPTS_DIR.exists():
+        # Resolve to PROMPTS_DIR / filename (e.g. alex.prompt.txt)
+        name = Path(prompt_file).name
+        path = PROMPTS_DIR / name
+        if path.exists():
+            parts.append(path.read_text(encoding="utf-8").strip())
+        else:
+            parts.append("\nAnalyze the provided document and return your analysis in a clear, structured format.")
+    else:
+        parts.append("\nAnalyze the provided document and return your analysis in a clear, structured format.")
     return "\n\n".join(parts)
