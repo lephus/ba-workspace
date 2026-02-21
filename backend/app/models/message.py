@@ -14,6 +14,7 @@ class Message(db.Model):
     role = db.Column(db.String(32), nullable=False)  # user, assistant, system
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    agent_id = db.Column(db.String(32), nullable=True)  # for assistant: which bot replied (paul, emma, sarah, david, alex)
 
     conversation = db.relationship("Conversation", back_populates="messages")
 
@@ -24,4 +25,5 @@ class Message(db.Model):
             "role": self.role,
             "content": self.content,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "agent_id": self.agent_id,
         }

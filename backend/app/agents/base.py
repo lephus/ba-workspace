@@ -27,6 +27,20 @@ def load_agent_yaml(agent_name: str) -> dict:
         return yaml.safe_load(f)
 
 
+def get_agent_bot_info(agent_name: str) -> dict:
+    """
+    Return bot info for API: { name, avatar, role }.
+    avatar is taken from metadata.icon in agent YAML.
+    """
+    data = load_agent_yaml(agent_name)
+    meta = data.get("agent", {}).get("metadata", {})
+    return {
+        "name": meta.get("name", agent_name.title()),
+        "avatar": meta.get("icon", ""),
+        "role": "assistant",
+    }
+
+
 def build_system_prompt(agent_name: str) -> str:
     """Build system prompt from agent YAML persona."""
     data = load_agent_yaml(agent_name)

@@ -179,16 +179,16 @@ The rest of the architecture is in place so that the `analyze` command and pipel
 
 ### Backend
 
-Xem [backend/README.md](backend/README.md) để chạy backend đúng cách.
+See [backend/README.md](backend/README.md) for how to run the backend.
 
-**Tóm tắt:**
+**Summary:**
 1. `cd backend && pip install -r requirements.txt`
-2. Thêm `GEMINI_API_KEY` vào `.env` ở workspace root
-3. `cd backend && python3 run.py` – server tại `http://localhost:5000`
+2. Add `GEMINI_API_KEY` to `.env` in the workspace root
+3. `cd backend && python3 run.py` – server at `http://localhost:5000`
 
-**Lưu ý:** Chạy từ thư mục `backend/` hoặc dùng `python3 backend/run.py` từ root.
+**Note:** Run from the `backend/` directory or use `python3 backend/run.py` from the root.
 
 ### Frontend
 
 1. `cd frontend && npm install`
-2. `npm run dev` – chạy tại `http://localhost:3000` (proxy API sang backend)
+2. `npm run dev` – runs at `http://localhost:3000` (proxies API to backend)
