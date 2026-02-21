@@ -14,9 +14,13 @@ class Conversation(db.Model):
     title = db.Column(db.String(255), nullable=False, default="New chat")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    pinned_at = db.Column(db.DateTime, nullable=True)  # when set, conversation is pinned to top
 
     project = db.relationship("Project", back_populates="conversations")
     messages = db.relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
+    pinned_messages = db.relationship(
+        "PinnedMessage", back_populates="conversation", cascade="all, delete-orphan"
+    )
 
     def to_dict(self):
         return {
@@ -25,4 +29,6 @@ class Conversation(db.Model):
             "title": self.title,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "pinned": self.pinned_at is not None,
+            "pinned_at": self.pinned_at.isoformat() if self.pinned_at else None,
         }

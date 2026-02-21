@@ -1,7 +1,7 @@
 """Messages API."""
 from flask import Blueprint, jsonify, request
 
-from app.models import Conversation, Message, Project, db
+from app.models import Conversation, Message, PinnedMessage, Project, db
 from app.services.content_normalizer import normalize_user_content
 from app.services.conversation_agent import get_agent_reply, get_conversation_bot
 from app.services.export_detector import detect_export_format
@@ -48,6 +48,132 @@ def list_messages(project_id, conversation_id):
     ).first_or_404()
     msgs = Message.query.filter_by(conversation_id=conv.id).order_by(Message.created_at.asc()).all()
     return jsonify([_message_with_bot(m) for m in msgs])
+
+
+@bp.route("/<int:project_id>/conversations/<int:conversation_id>/pinned-messages", methods=["GET"])
+def list_pinned_messages(project_id, conversation_id):
+    """
+    List pinned messages in a conversation.
+    ---
+    tags:
+      - Messages
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: conversation_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: List of pinned messages (id, message_id, message_preview, pinned_at)
+      404:
+        description: Conversation not found
+    """
+    conv = Conversation.query.filter_by(
+        id=conversation_id, project_id=project_id
+    ).first_or_404()
+    pinned = (
+        PinnedMessage.query.filter_by(conversation_id=conv.id)
+        .order_by(PinnedMessage.pinned_at.desc())
+        .all()
+    )
+    return jsonify([p.to_dict() for p in pinned])
+
+
+@bp.route(
+    "/<int:project_id>/conversations/<int:conversation_id>/messages/<int:message_id>/pin",
+    methods=["POST"],
+)
+def pin_message(project_id, conversation_id, message_id):
+    """
+    Pin a message (stores message_id and first ~100 chars of content).
+    ---
+    tags:
+      - Messages
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: conversation_id
+        in: path
+        type: integer
+        required: true
+      - name: message_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      201:
+        description: Pinned message created
+      404:
+        description: Conversation or message not found
+      409:
+        description: Message already pinned
+    """
+    conv = Conversation.query.filter_by(
+        id=conversation_id, project_id=project_id
+    ).first_or_404()
+    msg = Message.query.filter_by(
+        id=message_id, conversation_id=conv.id
+    ).first_or_404()
+    existing = PinnedMessage.query.filter_by(message_id=message_id).first()
+    if existing:
+        return jsonify({"error": "Message already pinned"}), 409
+    preview = (msg.content or "")[:100].strip()
+    if len(preview) > 150:
+        preview = preview[:150]
+    pinned = PinnedMessage(
+        message_id=msg.id,
+        conversation_id=conv.id,
+        message_preview=preview,
+    )
+    db.session.add(pinned)
+    db.session.commit()
+    return jsonify(pinned.to_dict()), 201
+
+
+@bp.route(
+    "/<int:project_id>/conversations/<int:conversation_id>/messages/<int:message_id>/pin",
+    methods=["DELETE"],
+)
+def unpin_message(project_id, conversation_id, message_id):
+    """
+    Unpin a message.
+    ---
+    tags:
+      - Messages
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: conversation_id
+        in: path
+        type: integer
+        required: true
+      - name: message_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      204:
+        description: Unpinned
+      404:
+        description: Conversation or message or pin not found
+    """
+    conv = Conversation.query.filter_by(
+        id=conversation_id, project_id=project_id
+    ).first_or_404()
+    pinned = PinnedMessage.query.filter_by(
+        message_id=message_id, conversation_id=conv.id
+    ).first_or_404()
+    db.session.delete(pinned)
+    db.session.commit()
+    return "", 204
 
 
 @bp.route("/<int:project_id>/conversations/<int:conversation_id>/messages", methods=["POST"])

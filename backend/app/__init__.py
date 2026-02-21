@@ -56,9 +56,14 @@ def create_app(config=None):
     db.init_app(app)
     with app.app_context():
         db.create_all()
-        from app.db_migrate import migrate_add_conversation_columns, migrate_add_message_agent_id
+        from app.db_migrate import (
+            migrate_add_conversation_columns,
+            migrate_add_conversation_pinned_at,
+            migrate_add_message_agent_id,
+        )
 
         migrate_add_conversation_columns(app)
         migrate_add_message_agent_id(app)
+        migrate_add_conversation_pinned_at(app)
 
     return app
