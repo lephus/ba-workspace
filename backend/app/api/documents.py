@@ -59,6 +59,16 @@ def upload_document(project_id):
         in: formData
         type: integer
         required: false
+      - name: ai_task
+        in: formData
+        type: string
+        required: false
+        description: Công việc mà AI cần thực hiện với tài liệu này
+      - name: notes
+        in: formData
+        type: string
+        required: false
+        description: Ghi chú cho tài liệu
     consumes:
       - multipart/form-data
     responses:
@@ -102,11 +112,16 @@ def upload_document(project_id):
         except (ValueError, TypeError):
             pass
 
+    ai_task = request.form.get("ai_task") or None
+    notes = request.form.get("notes") or None
+
     doc = Document(
         project_id=project_id,
         conversation_id=conversation_id,
         filename=file.filename,
         file_path=str(file_path),
+        ai_task=ai_task,
+        notes=notes,
     )
     db.session.add(doc)
     db.session.commit()

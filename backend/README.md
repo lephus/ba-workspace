@@ -78,7 +78,7 @@ cd backend && FLASK_RELOAD=1 python3 run.py
 | PUT | `/api/v1/projects/:id/conversations/:cid` | Cập nhật conversation |
 | DELETE | `/api/v1/projects/:id/conversations/:cid` | Xóa conversation |
 | GET | `/api/v1/projects/:id/conversations/:cid/messages` | Danh sách messages |
-| POST | `/api/v1/projects/:id/conversations/:cid/messages` | Thêm message (body: `{"role":"user","content":"..."}`) |
+| POST | `/api/v1/projects/:id/conversations/:cid/messages` | Thêm message (body: `{"role":"user","content":"..."}`). Khi role=user, Agent BA tự động trả lời; response có thêm `assistant_message`. |
 | POST | `/api/v1/projects/:id/documents` | Upload document (form: file, optional conversation_id) |
 | GET | `/api/v1/projects/:id/documents` | Danh sách documents |
 | DELETE | `/api/v1/projects/:id/documents/:doc_id` | Xóa document |
