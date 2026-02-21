@@ -2,6 +2,7 @@
 from flask import Blueprint, jsonify, request
 
 from app.models import Conversation, Message, Project, db
+from app.services.conversation_agent import get_agent_reply
 
 bp = Blueprint("messages", __name__)
 
@@ -38,7 +39,9 @@ def list_messages(project_id, conversation_id):
 @bp.route("/<int:project_id>/conversations/<int:conversation_id>/messages", methods=["POST"])
 def create_message(project_id, conversation_id):
     """
-    Add a message to a conversation
+    Add a message to a conversation.
+    When role is "user", the BA agent is triggered: an assistant reply is generated
+    (using conversation history), saved, and returned along with the user message.
     ---
     tags:
       - Messages
@@ -62,11 +65,13 @@ def create_message(project_id, conversation_id):
             content: { type: string }
     responses:
       201:
-        description: Created message
+        description: Created message; if role was user, includes assistant_message
       400:
         description: role and content required; role must be user/assistant/system
       404:
         description: Conversation not found
+      500:
+        description: Agent (Gemini) error when role is user
     """
     conv = Conversation.query.filter_by(
         id=conversation_id, project_id=project_id
@@ -77,11 +82,32 @@ def create_message(project_id, conversation_id):
     role = data["role"].strip().lower()
     if role not in ("user", "assistant", "system"):
         return jsonify({"error": "role must be user, assistant, or system"}), 400
+    content = data["content"]
+
     msg = Message(
         conversation_id=conv.id,
         role=role,
-        content=data["content"],
+        content=content,
     )
     db.session.add(msg)
+
+    if role == "user":
+        try:
+            reply_text = get_agent_reply(conv.id, content)
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": f"Agent failed: {str(e)}"}), 500
+        assistant_msg = Message(
+            conversation_id=conv.id,
+            role="assistant",
+            content=reply_text,
+        )
+        db.session.add(assistant_msg)
+
     db.session.commit()
-    return jsonify(msg.to_dict()), 201
+
+    payload = {"message": msg.to_dict()}
+    if role == "user":
+        payload["assistant_message"] = assistant_msg.to_dict()
+
+    return jsonify(payload), 201
