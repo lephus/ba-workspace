@@ -169,6 +169,12 @@ export function ProjectList() {
                               Cuộc hội thoại
                             </Link>
                           </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/projects/${project.id}/documents`}>
+                              <FolderOpen className="size-4" />
+                              Tài liệu
+                            </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEdit(project)}>
                             <Pencil className="size-4" />
                             Chỉnh sửa
