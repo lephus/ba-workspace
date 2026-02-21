@@ -6,8 +6,8 @@ import {
   Pencil,
   Trash2,
   Plus,
-  FolderOpen,
   MessageSquare,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
-import { useProjects } from "@/features/projects/hooks";
-import type { Project } from "@/features/projects/types";
-import { ProjectDialog } from "./project-dialog";
-import { DeleteProjectDialog } from "./delete-project-dialog";
+import { useConversations } from "@/features/conversations/hooks";
+import type { Conversation } from "@/features/conversations/types";
+import { ConversationDialog } from "./conversation-dialog";
+import { DeleteConversationDialog } from "./delete-conversation-dialog";
 
-function ProjectTableSkeleton() {
+function ConversationTableSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -59,122 +59,152 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="bg-muted mb-4 flex size-12 items-center justify-center rounded-full">
-        <FolderOpen className="text-muted-foreground size-6" />
+        <MessageSquare className="text-muted-foreground size-6" />
       </div>
-      <h3 className="text-lg font-semibold">Chưa có dự án nào</h3>
+      <h3 className="text-lg font-semibold">Chưa có cuộc hội thoại nào</h3>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-        Bắt đầu bằng cách tạo dự án đầu tiên của bạn.
+        Bắt đầu bằng cách tạo cuộc hội thoại đầu tiên.
       </p>
       <Button className="mt-4" onClick={onCreateClick}>
         <Plus className="size-4" />
-        Tạo dự án
+        Tạo cuộc hội thoại
       </Button>
     </div>
   );
 }
 
-export function ProjectList() {
-  const { data: projects, isLoading, isError, error } = useProjects();
+interface ConversationListProps {
+  projectId: number;
+  projectName?: string;
+}
+
+export function ConversationList({
+  projectId,
+  projectName,
+}: ConversationListProps) {
+  const {
+    data: conversations,
+    isLoading,
+    isError,
+    error,
+  } = useConversations(projectId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
 
   const handleCreate = () => {
-    setSelectedProject(null);
+    setSelectedConversation(null);
     setDialogOpen(true);
   };
 
-  const handleEdit = (project: Project) => {
-    setSelectedProject(project);
+  const handleEdit = (conversation: Conversation) => {
+    setSelectedConversation(conversation);
     setDialogOpen(true);
   };
 
-  const handleDelete = (project: Project) => {
-    setSelectedProject(project);
+  const handleDelete = (conversation: Conversation) => {
+    setSelectedConversation(conversation);
     setDeleteDialogOpen(true);
   };
 
   return (
     <>
+      <div className="mb-6 flex items-center gap-3">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/projects">
+            <ArrowLeft className="size-4" />
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Cuộc hội thoại</h1>
+          {projectName && (
+            <p className="text-muted-foreground mt-1">
+              Dự án: {projectName}
+            </p>
+          )}
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Dự án</CardTitle>
+              <CardTitle>Danh sách cuộc hội thoại</CardTitle>
               <CardDescription>
-                Quản lý các dự án phân tích nghiệp vụ của bạn.
+                Quản lý các cuộc hội thoại trong dự án.
               </CardDescription>
             </div>
             <Button onClick={handleCreate}>
               <Plus className="size-4" />
-              Tạo dự án
+              Tạo cuộc hội thoại
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <ProjectTableSkeleton />
+            <ConversationTableSkeleton />
           ) : isError ? (
             <div className="py-8 text-center">
               <p className="text-destructive">
                 {error?.message || "Đã xảy ra lỗi khi tải dữ liệu."}
               </p>
             </div>
-          ) : !projects || projects.length === 0 ? (
+          ) : !conversations || conversations.length === 0 ? (
             <EmptyState onCreateClick={handleCreate} />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">ID</TableHead>
-                  <TableHead>Tên dự án</TableHead>
+                  <TableHead>Tiêu đề</TableHead>
                   <TableHead className="w-44">Ngày tạo</TableHead>
                   <TableHead className="w-44">Cập nhật lần cuối</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {projects.map((project) => (
-                  <TableRow key={project.id}>
+                {conversations.map((conversation) => (
+                  <TableRow key={conversation.id}>
                     <TableCell className="text-muted-foreground font-mono">
-                      {project.id}
+                      {conversation.id}
                     </TableCell>
                     <TableCell className="font-medium">
                       <Link
-                        href={`/projects/${project.id}/conversations`}
+                        href={`/projects/${projectId}/conversations/${conversation.id}`}
                         className="hover:underline"
                       >
-                        {project.name}
+                        {conversation.title}
                       </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatDate(project.created_at)}
+                      {formatDate(conversation.created_at)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatDate(project.updated_at)}
+                      {formatDate(conversation.updated_at)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                          >
                             <MoreHorizontal className="size-4" />
                             <span className="sr-only">Mở menu</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/projects/${project.id}/conversations`}>
-                              <MessageSquare className="size-4" />
-                              Cuộc hội thoại
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(project)}>
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(conversation)}
+                          >
                             <Pencil className="size-4" />
                             Chỉnh sửa
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDelete(project)}
+                            onClick={() => handleDelete(conversation)}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="size-4" />
@@ -191,16 +221,18 @@ export function ProjectList() {
         </CardContent>
       </Card>
 
-      <ProjectDialog
+      <ConversationDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        project={selectedProject}
+        projectId={projectId}
+        conversation={selectedConversation}
       />
 
-      <DeleteProjectDialog
+      <DeleteConversationDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        project={selectedProject}
+        projectId={projectId}
+        conversation={selectedConversation}
       />
     </>
   );
