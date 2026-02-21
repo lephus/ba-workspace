@@ -4,12 +4,17 @@ from flask import Blueprint, jsonify, request
 from app.models import Conversation, Message, Project, db
 from app.services.content_normalizer import normalize_user_content
 from app.services.conversation_agent import get_agent_reply, get_conversation_bot
+from app.services.export_detector import detect_export_format
+from app.services.export_service import EXPORT_EXT, save_export_to_project
 
 bp = Blueprint("messages", __name__)
 
 
 def _message_with_bot(msg: Message) -> dict:
-    """Return message dict with bot (avatar, name, role) for assistant messages."""
+    """
+    Return message dict with bot (avatar, name, role) for assistant messages.
+    Assistant message content is always Markdown; frontend should render with a Markdown parser.
+    """
     d = msg.to_dict()
     if msg.role == "assistant":
         d["bot"] = get_conversation_bot(msg.agent_id)
@@ -145,5 +150,19 @@ def create_message(project_id, conversation_id):
         payload["assistant_message"] = _message_with_bot(assistant_msg)
         payload["bot"] = get_conversation_bot(primary_agent_id)
         payload["agents_involved"] = selected_agent_ids or []
+
+        # If user asked for export with a format, save file and return download link
+        export_format = detect_export_format(content)
+        if export_format and export_format in EXPORT_EXT and reply_text.strip():
+            try:
+                filename = save_export_to_project(project_id, reply_text, export_format)
+                # Relative path; frontend prepends API base for same-origin or proxy
+                payload["export_requested"] = {
+                    "format": export_format,
+                    "download_url": f"/api/v1/projects/{project_id}/exports/{filename}",
+                    "filename": filename,
+                }
+            except Exception:
+                pass  # Do not fail the request if export save fails
 
     return jsonify(payload), 201

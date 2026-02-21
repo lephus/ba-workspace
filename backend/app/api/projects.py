@@ -1,7 +1,11 @@
 """Projects API."""
-from flask import Blueprint, jsonify, request
+from pathlib import Path
+
+from flask import Blueprint, jsonify, request, send_file
 
 from app.models import Project, db
+from app.services.config_loader import get_config
+from app.services.export_service import EXPORT_MIME, is_export_filename_safe
 
 bp = Blueprint("projects", __name__)
 
@@ -120,10 +124,62 @@ def update_project(project_id):
     return jsonify(project.to_dict())
 
 
+def _get_project_documents_path(project_id: int) -> Path:
+    config = get_config()
+    path = config.get("documents_path")
+    if not path:
+        from flask import current_app
+        path = Path(current_app.config["PROJECT_ROOT"]) / "data" / "documents"
+    return Path(path) / str(project_id)
+
+
+@bp.route("/<int:project_id>/exports/<filename>", methods=["GET"])
+def download_export(project_id, filename):
+    """
+    Download an export file for the project.
+    Files are stored in data/documents/<project_id>/ and removed when the project is deleted.
+    ---
+    tags:
+      - Projects
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: filename
+        in: path
+        type: string
+        required: true
+        description: Filename returned in export_requested (e.g. export_20250221_123456_abc1.docx)
+    responses:
+      200:
+        description: File download
+      404:
+        description: Project or file not found
+      400:
+        description: Invalid filename
+    """
+    Project.query.get_or_404(project_id)
+    if not is_export_filename_safe(filename):
+        return jsonify({"error": "Invalid export filename"}), 400
+    folder = _get_project_documents_path(project_id)
+    file_path = folder / filename
+    if not file_path.is_file():
+        return jsonify({"error": "Export file not found"}), 404
+    ext = filename.split(".")[-1].lower()
+    mimetype = EXPORT_MIME.get(ext, "application/octet-stream")
+    return send_file(
+        file_path,
+        mimetype=mimetype,
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @bp.route("/<int:project_id>", methods=["DELETE"])
 def delete_project(project_id):
     """
-    Delete project
+    Delete project and its data folder (documents + exports under data/documents/<project_id>).
     ---
     tags:
       - Projects
@@ -139,6 +195,10 @@ def delete_project(project_id):
         description: Not found
     """
     project = Project.query.get_or_404(project_id)
+    folder = _get_project_documents_path(project_id)
+    if folder.is_dir():
+        import shutil
+        shutil.rmtree(folder, ignore_errors=True)
     db.session.delete(project)
     db.session.commit()
     return "", 204
