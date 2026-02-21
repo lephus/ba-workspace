@@ -29,3 +29,16 @@ def migrate_add_message_agent_id(app):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+
+def migrate_add_conversation_pinned_at(app):
+    """Add pinned_at to conversations if missing (for existing DBs)."""
+    with app.app_context():
+        try:
+            db.session.execute(text("SELECT pinned_at FROM conversations LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE conversations ADD COLUMN pinned_at DATETIME"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()

@@ -1,5 +1,8 @@
 """Conversations API."""
+from datetime import datetime
+
 from flask import Blueprint, jsonify, request
+from sqlalchemy import nulls_last
 
 from app.models import Conversation, Project, db
 
@@ -27,7 +30,10 @@ def list_conversations(project_id):
     Project.query.get_or_404(project_id)
     convs = (
         Conversation.query.filter_by(project_id=project_id)
-        .order_by(Conversation.updated_at.desc())
+        .order_by(
+            nulls_last(Conversation.pinned_at.desc()),
+            Conversation.updated_at.desc(),
+        )
         .all()
     )
     return jsonify([c.to_dict() for c in convs])
@@ -128,6 +134,74 @@ def update_conversation(project_id, conversation_id):
     data = request.get_json() or {}
     if "title" in data:
         conv.title = data["title"].strip() or conv.title
+    db.session.commit()
+    return jsonify(conv.to_dict())
+
+
+@bp.route("/<int:project_id>/conversations/<int:conversation_id>/pin", methods=["PUT"])
+def pin_conversation(project_id, conversation_id):
+    """
+    Pin or unpin a conversation (pinned conversations appear at top of list).
+    ---
+    tags:
+      - Conversations
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: conversation_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        schema:
+          type: object
+          properties:
+            pinned: { type: boolean, default: true }
+    responses:
+      200:
+        description: Updated conversation with pinned state
+      404:
+        description: Not found
+    """
+    conv = Conversation.query.filter_by(
+        id=conversation_id, project_id=project_id
+    ).first_or_404()
+    data = request.get_json() or {}
+    pinned = data.get("pinned", True)
+    conv.pinned_at = datetime.utcnow() if pinned else None
+    db.session.commit()
+    return jsonify(conv.to_dict())
+
+
+@bp.route("/<int:project_id>/conversations/<int:conversation_id>/pin", methods=["DELETE"])
+def unpin_conversation(project_id, conversation_id):
+    """
+    Unpin a conversation.
+    ---
+    tags:
+      - Conversations
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: conversation_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Updated conversation (unpinned)
+      404:
+        description: Not found
+    """
+    conv = Conversation.query.filter_by(
+        id=conversation_id, project_id=project_id
+    ).first_or_404()
+    conv.pinned_at = None
     db.session.commit()
     return jsonify(conv.to_dict())
 
