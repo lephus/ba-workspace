@@ -14,6 +14,7 @@ import {
   PanelLeft,
   Pin,
   PinOff,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,6 +33,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useConversations, useTogglePinConversation } from "@/features/conversations/hooks";
 import type { Conversation } from "@/features/conversations/types";
+import { useDocuments } from "@/features/documents/hooks";
+import { DocumentListDialog } from "@/features/documents/components/document-list-dialog";
 import { ConversationDialog } from "./conversation-dialog";
 import { DeleteConversationDialog } from "./delete-conversation-dialog";
 
@@ -58,8 +61,12 @@ export function ConversationSidebar({
   const pinnedConversations = conversations?.filter((c) => c.pinned) || [];
   const unpinnedConversations = conversations?.filter((c) => !c.pinned) || [];
 
+  const { data: documents } = useDocuments(projectId);
+  const documentCount = documents?.length ?? 0;
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [documentListOpen, setDocumentListOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
 
@@ -141,6 +148,26 @@ export function ConversationSidebar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Tạo cuộc hội thoại mới</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 relative"
+                  onClick={() => setDocumentListOpen(true)}
+                >
+                  <FileText className="size-4" />
+                  {documentCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-medium leading-none">
+                      {documentCount > 99 ? "99+" : documentCount}
+                    </span>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Tài liệu{documentCount > 0 ? ` (${documentCount})` : ""}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -344,6 +371,12 @@ export function ConversationSidebar({
         projectId={projectId}
         conversation={selectedConversation}
         onSuccess={handleConversationDeleted}
+      />
+
+      <DocumentListDialog
+        open={documentListOpen}
+        onOpenChange={setDocumentListOpen}
+        projectId={projectId}
       />
     </>
   );
