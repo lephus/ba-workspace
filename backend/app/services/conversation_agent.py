@@ -30,16 +30,53 @@ def get_conversation_system_prompt() -> str:
     )
 
 
+def _build_identity_instruction(selected_agents: list[dict]) -> str:
+    """
+    Build explicit identity instruction so the LLM introduces itself with the correct name.
+    Prevents the model from defaulting to 'Alex' when the router selected another agent (e.g. Emma).
+    """
+    names = [a.get("name", "").strip() for a in selected_agents if a.get("name")]
+    names = [n for n in names if n]
+    if not names:
+        return ""
+    if len(names) == 1:
+        name = names[0]
+        return (
+            f"[IDENTITY]\n"
+            f"Your name is {name}. When you introduce yourself, say only that you are {name} (e.g. \"Tôi là {name}\" or \"I am {name}\").\n"
+            f"Do not say you are any other agent (e.g. do not say you are Alex, Paul, Sarah, or David unless your name is that agent).\n"
+            f"You are speaking as {name} alone; do not refer to other agents as if they were separate from you in this reply."
+        )
+    # Multiple agents: one coherent voice; primary name for introduction = first selected
+    primary = names[0]
+    others = ", ".join(names[1:])
+    return (
+        f"[IDENTITY]\n"
+        f"You are answering as a single voice that combines the perspectives of: {primary}, {others}.\n"
+        f"When you introduce yourself, use the primary identity \"{primary}\" (e.g. \"Tôi là {primary}\" or \"I am {primary}\"), "
+        f"and you may add that you are incorporating inputs from {others} where relevant.\n"
+        f"Do not say you are Alex, or any agent not in the list above, unless that agent is one of: {', '.join(names)}."
+    )
+
+
 def _build_multi_agent_system_prompt(selected_agents: list[dict]) -> str:
-    """Build system prompt when multiple agents are selected (collaboration)."""
+    """Build system prompt when agent(s) are selected; includes explicit identity to avoid wrong name (e.g. Alex)."""
     base = get_conversation_system_prompt()
-    parts = [
-        base,
-        "",
-        "You are responding as the following agent(s). Coordinate your answer from these perspectives:",
-    ]
+    parts = [base, ""]
+
+    # Explicit identity so the model uses the selected agent's name, not a default like Alex
+    identity_block = _build_identity_instruction(selected_agents)
+    if identity_block:
+        parts.append(identity_block)
+        parts.append("")
+
+    parts.append(
+        "You are responding as the following agent(s). Coordinate your answer from these perspectives:"
+    )
     for a in selected_agents:
-        parts.append(f"- {a.get('name', '')} ({a.get('responsibility', '')}): {a.get('description', '').strip()}")
+        parts.append(
+            f"- {a.get('name', '')} ({a.get('responsibility', '')}): {a.get('description', '').strip()}"
+        )
     parts.append("")
     parts.append("Give one coherent reply that combines these viewpoints when relevant.")
     return "\n".join(parts)

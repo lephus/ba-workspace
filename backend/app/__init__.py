@@ -59,11 +59,15 @@ def create_app(config=None):
         from app.db_migrate import (
             migrate_add_conversation_columns,
             migrate_add_conversation_pinned_at,
+            migrate_add_documents_ai_task,
+            migrate_add_documents_notes,
             migrate_add_message_agent_id,
         )
 
         migrate_add_conversation_columns(app)
         migrate_add_message_agent_id(app)
         migrate_add_conversation_pinned_at(app)
+        migrate_add_documents_ai_task(app)
+        migrate_add_documents_notes(app)
 
     return app

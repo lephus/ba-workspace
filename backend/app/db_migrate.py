@@ -42,3 +42,29 @@ def migrate_add_conversation_pinned_at(app):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+
+def migrate_add_documents_ai_task(app):
+    """Add ai_task to documents if missing (for existing DBs)."""
+    with app.app_context():
+        try:
+            db.session.execute(text("SELECT ai_task FROM documents LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE documents ADD COLUMN ai_task TEXT"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+
+def migrate_add_documents_notes(app):
+    """Add notes to documents if missing (for existing DBs)."""
+    with app.app_context():
+        try:
+            db.session.execute(text("SELECT notes FROM documents LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE documents ADD COLUMN notes TEXT"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
