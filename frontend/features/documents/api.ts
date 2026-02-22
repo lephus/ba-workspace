@@ -53,10 +53,11 @@ export async function uploadDocumentApi(
 
   if (!response.ok) {
     if (response.status === 400) {
-      throw new Error(
-        "Tệp không hợp lệ hoặc định dạng không được hỗ trợ (pdf, docx, txt)"
-      );
-    }
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          body.error ?? "Tệp không hợp lệ hoặc định dạng không được hỗ trợ (pdf, docx, doc, txt, xlsx, xls)"
+        );
+      }
     if (response.status === 404) {
       throw new Error("Không tìm thấy dự án");
     }

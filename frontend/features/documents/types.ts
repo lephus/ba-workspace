@@ -9,6 +9,12 @@ export interface Document {
   ai_task?: string | null;
   notes?: string | null;
   conversation_id?: number | null;
+  // RAG fields (populated after AI processing)
+  summary?: string | null;
+  keywords?: string[];
+  important_points?: string[];
+  assigned_agent?: string | null;
+  rag_processed_at?: string | null;
   created_at: string;
   updated_at: string;
 }

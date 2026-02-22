@@ -7,6 +7,8 @@ import {
   FileText,
   FileType,
   ArrowLeft,
+  Info,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -37,6 +39,7 @@ import { useDocuments } from "@/features/documents/hooks";
 import type { Document } from "@/features/documents/types";
 import { UploadDocumentDialog } from "./upload-document-dialog";
 import { DeleteDocumentDialog } from "./delete-document-dialog";
+import { DocumentRagDialog } from "./document-rag-dialog";
 
 function DocumentTableSkeleton() {
   return (
@@ -101,6 +104,7 @@ export function DocumentList({ projectId }: DocumentListProps) {
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ragDialogOpen, setRagDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
     null
   );
@@ -112,6 +116,11 @@ export function DocumentList({ projectId }: DocumentListProps) {
   const handleDelete = (doc: Document) => {
     setSelectedDocument(doc);
     setDeleteDialogOpen(true);
+  };
+
+  const handleViewRag = (doc: Document) => {
+    setSelectedDocument(doc);
+    setRagDialogOpen(true);
   };
 
   return (
@@ -182,6 +191,14 @@ export function DocumentList({ projectId }: DocumentListProps) {
                               {doc.ai_task}
                             </p>
                           )}
+                          {doc.rag_processed_at && (
+                            <span className="inline-flex items-center gap-1 text-xs text-primary mt-0.5">
+                              <Sparkles className="size-3" />
+                              {doc.assigned_agent
+                                ? `Agent: ${doc.assigned_agent}`
+                                : "Đã phân tích AI"}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -197,20 +214,36 @@ export function DocumentList({ projectId }: DocumentListProps) {
                       {formatDate(doc.created_at)}
                     </TableCell>
                     <TableCell>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(doc)}
-                          >
-                            <Trash2 className="size-4" />
-                            <span className="sr-only">Xóa</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Xóa tài liệu</TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center justify-end gap-0.5">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleViewRag(doc)}
+                            >
+                              <Info className="size-4" />
+                              <span className="sr-only">Xem chi tiết AI</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Xem phân tích AI</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(doc)}
+                            >
+                              <Trash2 className="size-4" />
+                              <span className="sr-only">Xóa</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Xóa tài liệu</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -231,6 +264,12 @@ export function DocumentList({ projectId }: DocumentListProps) {
         onOpenChange={setDeleteDialogOpen}
         document={selectedDocument}
         projectId={projectId}
+      />
+
+      <DocumentRagDialog
+        open={ragDialogOpen}
+        onOpenChange={setRagDialogOpen}
+        document={selectedDocument}
       />
     </>
   );
