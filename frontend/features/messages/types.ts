@@ -1,5 +1,11 @@
 // Message types
 
+export interface MessageAttachment {
+  type: "document" | "file";
+  id?: number;
+  filename: string;
+}
+
 export interface Message {
   id: number;
   conversation_id: number;
@@ -8,6 +14,7 @@ export interface Message {
   created_at: string;
   agent_id?: string | null;
   bot?: Bot;
+  attachments?: MessageAttachment[];
 }
 
 export interface Bot {
@@ -36,6 +43,7 @@ export interface StructuredContent {
 export interface SendMessageInput {
   role: "user";
   content: StructuredContent;
+  attachments?: MessageAttachment[];
 }
 
 export interface PinnedMessage {

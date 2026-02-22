@@ -17,7 +17,9 @@ import {
   usePinMessage,
   useUnpinMessage,
 } from "@/features/messages/hooks";
+import { useDocuments, useUploadDocument } from "@/features/documents/hooks";
 import { useConversation } from "@/features/conversations/hooks";
+import type { MessageAttachment } from "@/features/messages/types";
 import { MessageBubble } from "./message-bubble";
 import { ChatInput } from "./chat-input";
 import { AgentPanel } from "./agent-panel";
@@ -65,8 +67,10 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
 
   const { data: conversation } = useConversation(projectId, conversationId);
   const { data: pinnedMessages } = usePinnedMessages(projectId, conversationId);
+  const { data: documents } = useDocuments(projectId);
 
   const sendMessage = useSendMessage(projectId, conversationId);
+  const uploadDocument = useUploadDocument(projectId);
   const pinMessage = usePinMessage(projectId, conversationId);
   const unpinMessage = useUnpinMessage(projectId, conversationId);
 
@@ -98,18 +102,28 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
     return () => clearTimeout(timer);
   }, [messages, sendMessage.isPending]);
 
-  const handleSend = (content: string) => {
+  const handleSend = (content: string, attachments: MessageAttachment[]) => {
     sendMessage.mutate({
       role: "user",
       content: {
         content_type: "text",
         parts: content.split("\n").filter((line) => line.trim() !== ""),
       },
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
   };
 
   const handlePin = (messageId: number) => {
     pinMessage.mutate(messageId);
+  };
+
+  const handleAttach = (files: File[]) => {
+    files.forEach((file) => {
+      uploadDocument.mutate({
+        file,
+        conversation_id: conversationId,
+      });
+    });
   };
 
   const handleUnpin = (messageId: number) => {
@@ -258,7 +272,15 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
       </ScrollArea>
 
       {/* Chat input */}
-      <ChatInput onSend={handleSend} isLoading={sendMessage.isPending} />
+      <ChatInput
+        onSend={handleSend}
+        onAttach={handleAttach}
+        existingDocuments={documents?.map((document) => ({
+          id: document.id,
+          filename: document.filename,
+        }))}
+        isLoading={sendMessage.isPending}
+      />
     </div>
   );
 }
