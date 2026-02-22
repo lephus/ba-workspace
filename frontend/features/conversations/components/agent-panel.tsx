@@ -93,7 +93,7 @@ export function AgentPanel({ activeAgentIds }: AgentPanelProps) {
         </div>
 
         {/* Avatar stack */}
-        <div className="flex -space-x-2">
+        <div className="group/avatars flex -space-x-2 hover:space-x-1 transition-all duration-300">
           {AGENTS.map((agent) => {
             const isActive = activeAgentIds?.includes(agent.id);
             return (
@@ -101,7 +101,7 @@ export function AgentPanel({ activeAgentIds }: AgentPanelProps) {
                 <TooltipTrigger asChild>
                   <div
                     className={cn(
-                      "relative rounded-full ring-2 ring-background transition-all",
+                      "relative rounded-full ring-2 ring-background transition-all duration-300",
                       isActive && "ring-primary/50"
                     )}
                   >
