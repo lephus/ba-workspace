@@ -1,4 +1,5 @@
 """Messages API."""
+import json
 from flask import Blueprint, jsonify, request
 
 from app.models import Conversation, Document, Message, PinnedMessage, Project, db
@@ -279,6 +280,7 @@ def create_message(project_id, conversation_id):
         conversation_id=conv.id,
         role=role,
         content=content,
+        attachments_json=json.dumps(attachments) if attachments else None,
     )
     db.session.add(msg)
 

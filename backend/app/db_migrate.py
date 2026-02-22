@@ -89,3 +89,16 @@ def migrate_add_documents_rag_fields(app):
                     db.session.commit()
                 except Exception:
                     db.session.rollback()
+
+
+def migrate_add_message_attachments(app):
+    """Add attachments_json to messages if missing (for existing DBs)."""
+    with app.app_context():
+        try:
+            db.session.execute(text("SELECT attachments_json FROM messages LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE messages ADD COLUMN attachments_json TEXT"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
