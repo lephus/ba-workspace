@@ -61,6 +61,7 @@ def create_app(config=None):
             migrate_add_conversation_pinned_at,
             migrate_add_documents_ai_task,
             migrate_add_documents_notes,
+            migrate_add_documents_rag_fields,
             migrate_add_message_agent_id,
         )
 
@@ -69,5 +70,6 @@ def create_app(config=None):
         migrate_add_conversation_pinned_at(app)
         migrate_add_documents_ai_task(app)
         migrate_add_documents_notes(app)
+        migrate_add_documents_rag_fields(app)
 
     return app

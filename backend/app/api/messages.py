@@ -1,7 +1,7 @@
 """Messages API."""
 from flask import Blueprint, jsonify, request
 
-from app.models import Conversation, Message, PinnedMessage, Project, db
+from app.models import Conversation, Document, Message, PinnedMessage, Project, db
 from app.services.content_normalizer import normalize_user_content
 from app.services.conversation_agent import get_agent_reply, get_conversation_bot
 from app.services.export_detector import detect_export_format
@@ -247,6 +247,34 @@ def create_message(project_id, conversation_id):
     if not content:
         return jsonify({"error": "content is empty after normalization"}), 400
 
+    # ── Build document context from attachments ──────────────────────────────
+    attachments = data.get("attachments") or []
+    document_context_blocks: list[str] = []
+    for att in attachments:
+        if att.get("type") == "document" and att.get("id"):
+            doc = Document.query.filter_by(id=att["id"], project_id=project_id).first()
+            if doc:
+                # If RAG not yet processed, run pipeline now (lazy fallback)
+                if not doc.rag_processed_at:
+                    try:
+                        from app.services.document_rag import process_document
+                        process_document(doc.id)
+                        db.session.refresh(doc)
+                    except Exception:
+                        pass
+                from app.services.document_rag import build_document_context_block
+                document_context_blocks.append(build_document_context_block(doc))
+
+    # Inject document context into the content sent to the agent
+    # (the original user message saved to DB stays clean)
+    agent_content = content
+    if document_context_blocks:
+        context_section = "\n\n".join(document_context_blocks)
+        agent_content = (
+            f"{content}\n\n"
+            f"--- Tài liệu đính kèm ---\n{context_section}"
+        )
+
     msg = Message(
         conversation_id=conv.id,
         role=role,
@@ -256,7 +284,7 @@ def create_message(project_id, conversation_id):
 
     if role == "user":
         try:
-            reply_text, selected_agent_ids = get_agent_reply(conv.id, content)
+            reply_text, selected_agent_ids = get_agent_reply(conv.id, agent_content)
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": f"Agent failed: {str(e)}"}), 500

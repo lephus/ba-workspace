@@ -6,7 +6,12 @@ from flask import Blueprint, current_app, jsonify, request
 
 from app.models import Conversation, Document, Project, db
 from app.services.config_loader import get_config
-from app.services.document_parser import ALLOWED_EXTENSIONS
+from app.services.document_parser import (
+    ALLOWED_EXTENSIONS,
+    MAX_FILE_SIZE_BYTES,
+    MAX_PAGE_COUNT,
+    parse_document,
+)
 
 bp = Blueprint("documents", __name__)
 
@@ -91,7 +96,15 @@ def upload_document(project_id):
     suffix = path.suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
         return jsonify({
-            "error": f"Unsupported format: {suffix}. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            "error": f"Định dạng không hỗ trợ: {suffix}. Chấp nhận: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+        }), 400
+
+    # Read into memory first to validate size before writing to disk
+    file_bytes = file.read()
+    if len(file_bytes) > MAX_FILE_SIZE_BYTES:
+        size_mb = len(file_bytes) / (1024 * 1024)
+        return jsonify({
+            "error": f"File vượt quá giới hạn 5MB (kích thước thực tế: {size_mb:.1f}MB)"
         }), 400
 
     base_path = Path(_get_documents_path())
@@ -100,7 +113,19 @@ def upload_document(project_id):
 
     unique_name = f"{uuid.uuid4().hex}{suffix}"
     file_path = project_dir / unique_name
-    file.save(str(file_path))
+    file_path.write_bytes(file_bytes)
+
+    # Validate page count (requires parsing the saved file)
+    try:
+        parsed = parse_document(str(file_path))
+        page_count = parsed["document_metadata"].get("page_count", 1)
+        if page_count > MAX_PAGE_COUNT:
+            file_path.unlink(missing_ok=True)
+            return jsonify({
+                "error": f"Tài liệu có {page_count} trang, vượt quá giới hạn {MAX_PAGE_COUNT} trang"
+            }), 400
+    except Exception as parse_err:
+        current_app.logger.warning("Could not check page count for %s: %s", file.filename, parse_err)
 
     conversation_id = None
     if request.form.get("conversation_id"):
@@ -125,6 +150,15 @@ def upload_document(project_id):
     )
     db.session.add(doc)
     db.session.commit()
+
+    # Trigger RAG pipeline (synchronous — runs in the same request)
+    try:
+        from app.services.document_rag import process_document
+        process_document(doc.id)
+        db.session.refresh(doc)
+    except Exception as rag_err:
+        current_app.logger.warning("RAG pipeline failed for doc %s: %s", doc.id, rag_err)
+
     return jsonify(doc.to_dict()), 201
 
 

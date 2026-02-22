@@ -1,7 +1,10 @@
 """Document parsing service."""
+import math
 from pathlib import Path
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls"}
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+MAX_PAGE_COUNT = 5
 
 
 def parse_document(file_path: str) -> dict:
@@ -30,6 +33,8 @@ def parse_document(file_path: str) -> dict:
         return _parse_docx(path, metadata)
     if suffix == ".txt":
         return _parse_txt(path, metadata)
+    if suffix in (".xlsx", ".xls"):
+        return _parse_xlsx(path, metadata)
 
     raise ValueError(f"Unsupported format: {suffix}")
 
@@ -52,7 +57,9 @@ def _parse_docx(path: Path, metadata: dict) -> dict:
     doc = DocxDocument(str(path))
     paragraphs = [p.text for p in doc.paragraphs]
     text = "\n".join(paragraphs)
+    word_count = len(text.split())
     metadata["paragraph_count"] = len(paragraphs)
+    metadata["page_count"] = max(1, math.ceil(word_count / 300))
     return {"document_text": text, "document_metadata": metadata}
 
 
@@ -60,4 +67,26 @@ def _parse_txt(path: Path, metadata: dict) -> dict:
     """Parse plain text file."""
     with open(path, encoding="utf-8", errors="replace") as f:
         text = f.read()
+    metadata["page_count"] = max(1, math.ceil(len(text) / 1800))
+    return {"document_text": text, "document_metadata": metadata}
+
+
+def _parse_xlsx(path: Path, metadata: dict) -> dict:
+    """Parse Excel file using openpyxl."""
+    import openpyxl
+
+    wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
+    sheet_count = len(wb.worksheets)
+    sheets_text = []
+    for sheet in wb.worksheets:
+        rows = []
+        for row in sheet.iter_rows(values_only=True):
+            row_str = "\t".join(str(c) if c is not None else "" for c in row)
+            if row_str.strip():
+                rows.append(row_str)
+        if rows:
+            sheets_text.append(f"[Sheet: {sheet.title}]\n" + "\n".join(rows))
+    wb.close()
+    text = "\n\n".join(sheets_text)
+    metadata["page_count"] = max(1, sheet_count)
     return {"document_text": text, "document_metadata": metadata}
