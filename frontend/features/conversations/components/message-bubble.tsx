@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Bot, User, Copy, Check, Pin, PinOff } from "lucide-react";
+import { Bot, User, Copy, Check, Pin, PinOff, FileText, Paperclip } from "lucide-react";
 import type { Message } from "@/features/messages/types";
 
 interface MessageBubbleProps {
@@ -104,6 +104,23 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
         >
           {isPinned && (
             <Pin className="size-3 text-amber-500 absolute -top-1.5 -right-1.5" />
+          )}
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1">
+              {message.attachments.map((att, i) => (
+                <div
+                  key={i}
+                  className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs"
+                >
+                  {att.type === "document" ? (
+                    <FileText className="size-3 shrink-0" />
+                  ) : (
+                    <Paperclip className="size-3 shrink-0" />
+                  )}
+                  <span className="max-w-36 truncate">{att.filename}</span>
+                </div>
+              ))}
+            </div>
           )}
           {isUser ? (
             message.content

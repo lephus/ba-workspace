@@ -65,6 +65,7 @@ export function useSendMessage(projectId: number, conversationId: number) {
         role: "user",
         content: optimisticContent,
         created_at: new Date().toISOString(),
+        attachments: data.attachments,
       };
 
       queryClient.setQueryData<Message[]>(key, (old) =>
