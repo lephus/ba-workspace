@@ -12,11 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Field,
-  FieldDescription,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { useUploadDocument } from "@/features/documents/hooks";
 
 const ACCEPTED_FORMATS = ".pdf,.docx,.doc,.txt,.xlsx,.xls";
@@ -111,7 +107,7 @@ export function UploadDocumentDialog({
         onSuccess: () => {
           handleOpenChange(false);
         },
-      }
+      },
     );
   };
 
@@ -123,14 +119,15 @@ export function UploadDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-125">
+      <DialogContent className="sm:max-w-125 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Tải lên tài liệu</DialogTitle>
           <DialogDescription>
-            Tải lên tài liệu liên quan đến dự án. Hỗ trợ PDF, DOCX, DOC, TXT, XLSX, XLS. Tối đa 5MB và 5 trang.
+            Tải lên tài liệu liên quan đến dự án. Hỗ trợ PDF, DOCX, DOC, TXT,
+            XLSX, XLS. Tối đa 5MB và 10 trang.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 min-w-0">
           {/* File input */}
           <Field>
             <FieldLabel>Tệp tài liệu *</FieldLabel>
@@ -140,18 +137,19 @@ export function UploadDocumentDialog({
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="size-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm font-medium">
-                  Nhấn để chọn tệp
-                </p>
+                <p className="text-sm font-medium">Nhấn để chọn tệp</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  PDF, DOCX, DOC, TXT, Excel (tối đa 5MB • 5 trang)
+                  PDF, DOCX, DOC, TXT, Excel (tối đa 5MB • 10 trang)
                 </p>
               </div>
             ) : (
-              <div className="flex items-center gap-3 border rounded-lg p-3 bg-muted/30">
+              <div className="flex items-center gap-3 border rounded-lg p-3 bg-muted/30 overflow-hidden">
                 <FileText className="size-8 text-primary shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <p
+                    className="text-sm font-medium truncate"
+                    title={selectedFile.name}
+                  >
                     {selectedFile.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -219,7 +217,10 @@ export function UploadDocumentDialog({
             >
               Hủy
             </Button>
-            <Button type="submit" disabled={uploadDocument.isPending || !selectedFile}>
+            <Button
+              type="submit"
+              disabled={uploadDocument.isPending || !selectedFile}
+            >
               {uploadDocument.isPending ? (
                 "Đang tải lên..."
               ) : (

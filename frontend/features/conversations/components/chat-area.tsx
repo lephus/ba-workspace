@@ -78,7 +78,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
 
   const pinnedMessageIds = useMemo(
     () => new Set(pinnedMessages?.map((p) => p.message_id) ?? []),
-    [pinnedMessages]
+    [pinnedMessages],
   );
 
   // Collect unique agent IDs from assistant messages
@@ -117,13 +117,20 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
     pinMessage.mutate(messageId);
   };
 
-  const handleAttach = (files: File[]) => {
-    files.forEach((file) => {
-      uploadDocument.mutate({
-        file,
-        conversation_id: conversationId,
-      });
-    });
+  const handleAttach = async (files: File[]): Promise<number[]> => {
+    const uploadedIds: number[] = [];
+    for (const file of files) {
+      try {
+        const doc = await uploadDocument.mutateAsync({
+          file,
+          conversation_id: conversationId,
+        });
+        uploadedIds.push(doc.id);
+      } catch {
+        // Error toast already shown by mutation's onError callback
+      }
+    }
+    return uploadedIds;
   };
 
   const handleUnpin = (messageId: number) => {
@@ -181,10 +188,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
           <div className="border-t bg-amber-50/50 dark:bg-amber-950/20 px-6 py-2 max-h-40 overflow-y-auto">
             <div className="space-y-1.5">
               {pinnedMessages.map((pin) => (
-                <div
-                  key={pin.id}
-                  className="flex items-center gap-2 group/pin"
-                >
+                <div key={pin.id} className="flex items-center gap-2 group/pin">
                   <button
                     className="flex-1 min-w-0 flex items-center gap-2 text-left text-xs hover:bg-amber-100/50 dark:hover:bg-amber-900/20 rounded px-2 py-1 transition-colors"
                     onClick={() => scrollToMessage(pin.message_id)}
@@ -233,9 +237,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
               <div className="bg-muted mb-4 flex size-16 items-center justify-center rounded-full">
                 <MessageSquare className="text-muted-foreground size-8" />
               </div>
-              <h3 className="text-lg font-semibold">
-                Bắt đầu cuộc hội thoại
-              </h3>
+              <h3 className="text-lg font-semibold">Bắt đầu cuộc hội thoại</h3>
               <p className="text-muted-foreground mt-2 max-w-sm text-sm">
                 Hãy gửi tin nhắn đầu tiên để bắt đầu phân tích nghiệp vụ.
               </p>
@@ -243,7 +245,11 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
           ) : (
             <div className="px-4 py-2">
               {messages.map((message) => (
-                <div key={message.id} id={`message-${message.id}`} className="transition-colors duration-500 rounded-lg">
+                <div
+                  key={message.id}
+                  id={`message-${message.id}`}
+                  className="transition-colors duration-500 rounded-lg"
+                >
                   <MessageBubble
                     message={message}
                     isPinned={pinnedMessageIds.has(message.id)}

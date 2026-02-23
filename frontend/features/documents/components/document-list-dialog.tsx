@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, FileText, FileType, Upload, Info, Sparkles } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  FileText,
+  FileType,
+  Upload,
+  Info,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -97,13 +105,18 @@ export function DocumentListDialog({
   onOpenChange,
   projectId,
 }: DocumentListDialogProps) {
-  const { data: documents, isLoading, isError, error } = useDocuments(projectId);
+  const {
+    data: documents,
+    isLoading,
+    isError,
+    error,
+  } = useDocuments(projectId);
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ragDialogOpen, setRagDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null
+    null,
   );
 
   const handleUpload = () => {
@@ -164,10 +177,10 @@ export function DocumentListDialog({
               ) : !documents || documents.length === 0 ? (
                 <EmptyState onUploadClick={handleUpload} />
               ) : (
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tên tệp</TableHead>
+                      <TableHead className="w-auto">Tên tệp</TableHead>
                       <TableHead className="w-20">Loại</TableHead>
                       <TableHead className="w-24">Kích thước</TableHead>
                       <TableHead className="w-32">Ngày tải</TableHead>
@@ -177,11 +190,14 @@ export function DocumentListDialog({
                   <TableBody>
                     {documents.map((doc) => (
                       <TableRow key={doc.id}>
-                        <TableCell>
+                        <TableCell className="max-w-0">
                           <div className="flex items-center gap-2 min-w-0">
                             <FileType className="size-4 text-muted-foreground shrink-0" />
-                            <div className="min-w-0">
-                              <p className="font-medium truncate text-sm">
+                            <div className="min-w-0 overflow-hidden">
+                              <p
+                                className="font-medium truncate text-sm"
+                                title={doc.filename}
+                              >
                                 {doc.filename}
                               </p>
                               {doc.ai_task && (
@@ -225,7 +241,9 @@ export function DocumentListDialog({
                                   onClick={() => handleViewRag(doc)}
                                 >
                                   <Info className="size-3.5" />
-                                  <span className="sr-only">Xem chi tiết AI</span>
+                                  <span className="sr-only">
+                                    Xem chi tiết AI
+                                  </span>
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Xem phân tích AI</TooltipContent>

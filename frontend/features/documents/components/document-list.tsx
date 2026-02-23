@@ -100,13 +100,18 @@ interface DocumentListProps {
 }
 
 export function DocumentList({ projectId }: DocumentListProps) {
-  const { data: documents, isLoading, isError, error } = useDocuments(projectId);
+  const {
+    data: documents,
+    isLoading,
+    isError,
+    error,
+  } = useDocuments(projectId);
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ragDialogOpen, setRagDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null
+    null,
   );
 
   const handleUpload = () => {
@@ -131,7 +136,12 @@ export function DocumentList({ projectId }: DocumentListProps) {
             <div className="flex items-center gap-3">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8" asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    asChild
+                  >
                     <Link href={`/projects/${projectId}/conversations`}>
                       <ArrowLeft className="size-4" />
                     </Link>
@@ -164,11 +174,11 @@ export function DocumentList({ projectId }: DocumentListProps) {
           ) : !documents || documents.length === 0 ? (
             <EmptyState onUploadClick={handleUpload} />
           ) : (
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">ID</TableHead>
-                  <TableHead>Tên tệp</TableHead>
+                  <TableHead className="w-auto">Tên tệp</TableHead>
                   <TableHead className="w-24">Loại</TableHead>
                   <TableHead className="w-28">Kích thước</TableHead>
                   <TableHead className="w-44">Ngày tải lên</TableHead>
@@ -181,11 +191,16 @@ export function DocumentList({ projectId }: DocumentListProps) {
                     <TableCell className="text-muted-foreground font-mono">
                       {doc.id}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-w-0">
                       <div className="flex items-center gap-2 min-w-0">
                         <FileType className="size-4 text-muted-foreground shrink-0" />
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{doc.filename}</p>
+                        <div className="min-w-0 overflow-hidden">
+                          <p
+                            className="font-medium truncate"
+                            title={doc.filename}
+                          >
+                            {doc.filename}
+                          </p>
                           {doc.ai_task && (
                             <p className="text-xs text-muted-foreground truncate max-w-75">
                               {doc.ai_task}
