@@ -24,18 +24,20 @@
 
 Người dùng có thể đính kèm tài liệu vào cuộc trò chuyện theo 2 cách:
 
-| Cách | Mô tả |
-|------|-------|
-| **Upload tài liệu mới** | Qua form dialog (trang Documents) hoặc qua dropdown trong chat input |
-| **Gắn tài liệu đã upload** | Chọn từ danh sách tài liệu đã có trong dropdown của chat input |
+| Cách                       | Mô tả                                                                |
+| -------------------------- | -------------------------------------------------------------------- |
+| **Upload tài liệu mới**    | Qua form dialog (trang Documents) hoặc qua dropdown trong chat input |
+| **Gắn tài liệu đã upload** | Chọn từ danh sách tài liệu đã có trong dropdown của chat input       |
 
 Khi tài liệu được **upload**, hệ thống sẽ:
+
 1. Validate format + kích thước + số trang
 2. Lưu file vào `data/documents/{project_id}/`
 3. **Chạy RAG pipeline** — Gemini đọc nội dung, tạo summary/keywords/important_points, chỉ định agent phù hợp
 4. Lưu kết quả RAG vào DB
 
 Khi người dùng **gửi message kèm tài liệu**, hệ thống sẽ:
+
 1. Load RAG context của tài liệu từ DB
 2. Inject context vào prompt của agent
 3. Agent trả lời dựa trên cả nội dung chat lẫn tài liệu
@@ -44,18 +46,18 @@ Khi người dùng **gửi message kèm tài liệu**, hệ thống sẽ:
 
 ## 2. Giới hạn & Quy tắc
 
-| Quy tắc | Giá trị |
-|---------|---------|
-| Định dạng chấp nhận | `.pdf`, `.docx`, `.doc`, `.txt`, `.xlsx`, `.xls` |
-| Kích thước tối đa | **5 MB** |
-| Số trang tối đa | **5 trang** |
-| Cách tính trang — PDF | Đếm thực tế (`len(reader.pages)`) |
-| Cách tính trang — DOCX/DOC | Ước lượng: `ceil(word_count / 300)` |
-| Cách tính trang — TXT | Ước lượng: `ceil(char_count / 1800)` |
-| Cách tính trang — Excel | Số sheets (`len(wb.worksheets)`) |
-| Nội dung tối đa gửi Gemini | 12.000 ký tự đầu tiên của file |
-| Keywords tối đa | 10 |
-| Important points tối đa | 5 |
+| Quy tắc                    | Giá trị                                          |
+| -------------------------- | ------------------------------------------------ |
+| Định dạng chấp nhận        | `.pdf`, `.docx`, `.doc`, `.txt`, `.xlsx`, `.xls` |
+| Kích thước tối đa          | **5 MB**                                         |
+| Số trang tối đa            | **10 trang**                                     |
+| Cách tính trang — PDF      | Đếm thực tế (`len(reader.pages)`)                |
+| Cách tính trang — DOCX/DOC | Ước lượng: `ceil(word_count / 300)`              |
+| Cách tính trang — TXT      | Ước lượng: `ceil(char_count / 1800)`             |
+| Cách tính trang — Excel    | Số sheets (`len(wb.worksheets)`)                 |
+| Nội dung tối đa gửi Gemini | 12.000 ký tự đầu tiên của file                   |
+| Keywords tối đa            | 10                                               |
+| Important points tối đa    | 5                                                |
 
 ---
 
@@ -152,12 +154,14 @@ Array.from(files).forEach((file) => {
 `<input>` HTML cũng có `accept=".txt,.doc,.docx,.pdf,.xlsx,.xls"` để filter ở file picker.
 
 **Khi nhấn Send**, `handleSend` build mảng `attachments`:
+
 ```typescript
 attachments: MessageAttachment[] = [
   // Tài liệu đã upload (existing): { type: "document", id: 5, filename: "req.pdf" }
   // File mới (chưa upload):         { type: "file", filename: "draft.docx" }
 ]
 ```
+
 → Truyền vào `onSend(content, attachments)` → `chat-area.tsx` → `sendMessage.mutate`.
 
 ---
@@ -168,13 +172,14 @@ attachments: MessageAttachment[] = [
 
 Form gồm 3 trường:
 
-| Trường | Bắt buộc | Mục đích |
-|--------|----------|---------|
-| **File** | ✅ | File cần upload |
-| **AI Task** | ❌ | Hướng dẫn cho AI (mặc định AI tự xử lý) |
-| **Notes** | ❌ | Ghi chú cho người đọc (AI không dùng field này) |
+| Trường      | Bắt buộc | Mục đích                                        |
+| ----------- | -------- | ----------------------------------------------- |
+| **File**    | ✅       | File cần upload                                 |
+| **AI Task** | ❌       | Hướng dẫn cho AI (mặc định AI tự xử lý)         |
+| **Notes**   | ❌       | Ghi chú cho người đọc (AI không dùng field này) |
 
 Validation client-side (cùng logic với chat-input):
+
 - `ACCEPTED_EXTS = Set(["pdf","docx","doc","txt","xlsx","xls"])`
 - `MAX_FILE_SIZE = 5 * 1024 * 1024` (5MB)
 
@@ -196,8 +201,8 @@ export interface Document {
   summary?: string | null;
   keywords?: string[];
   important_points?: string[];
-  assigned_agent?: string | null;     // "emma" | "sarah" | "jack" | "david" | "paul" | "alex"
-  rag_processed_at?: string | null;   // ISO datetime, null nếu chưa xử lý
+  assigned_agent?: string | null; // "emma" | "sarah" | "jack" | "david" | "paul" | "alex"
+  rag_processed_at?: string | null; // ISO datetime, null nếu chưa xử lý
   created_at: string;
 }
 ```
@@ -213,19 +218,19 @@ export interface Document {
 ```python
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls"}
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024   # 5 MB
-MAX_PAGE_COUNT = 5
+MAX_PAGE_COUNT = 10
 ```
 
 Hàm chính: `parse_document(file_path) → { document_text, document_metadata }`
 
 `document_metadata` luôn có key `page_count`:
 
-| Định dạng | Cách lấy page_count |
-|-----------|---------------------|
-| PDF | `len(PdfReader.pages)` — chính xác |
-| DOCX/DOC | `ceil(word_count / 300)` — ước lượng |
-| TXT | `ceil(char_count / 1800)` — ước lượng |
-| XLSX/XLS | `len(wb.worksheets)` — theo số sheets |
+| Định dạng | Cách lấy page_count                   |
+| --------- | ------------------------------------- |
+| PDF       | `len(PdfReader.pages)` — chính xác    |
+| DOCX/DOC  | `ceil(word_count / 300)` — ước lượng  |
+| TXT       | `ceil(char_count / 1800)` — ước lượng |
+| XLSX/XLS  | `len(wb.worksheets)` — theo số sheets |
 
 ---
 
@@ -235,6 +240,7 @@ Hàm chính: `parse_document(file_path) → { document_text, document_metadata }
 **Endpoint:** `POST /api/v1/projects/:project_id/documents`
 
 **Form data:**
+
 ```
 file           (required)  File cần upload
 conversation_id            ID conversation liên quan (optional)
@@ -243,6 +249,7 @@ notes                      Ghi chú người dùng (optional)
 ```
 
 **Flow xử lý:**
+
 ```python
 # 1. Check định dạng
 suffix not in ALLOWED_EXTENSIONS → 400
@@ -282,6 +289,7 @@ db.session.refresh(doc)
 Chạy toàn bộ pipeline RAG cho 1 document. Gọi sau khi upload thành công.
 
 **Bước 1 — Parse:**
+
 ```python
 parsed = parse_document(doc.file_path)
 document_text = parsed["document_text"][:12_000]  # truncate 12k chars
@@ -290,6 +298,7 @@ document_text = parsed["document_text"][:12_000]  # truncate 12k chars
 **Bước 2 — Gemini extraction:**
 
 Prompt gửi Gemini yêu cầu trả về JSON thuần:
+
 ```json
 {
   "summary": "2-4 câu tóm tắt nội dung...",
@@ -301,6 +310,7 @@ Prompt gửi Gemini yêu cầu trả về JSON thuần:
 ```
 
 **Bước 3 — Lưu vào DB:**
+
 ```python
 doc.summary = data["summary"]
 doc.keywords = json.dumps(data["keywords"])       # lưu JSON string
@@ -332,14 +342,14 @@ User notes (for reference only): Phiên bản được duyệt bởi PM ngày 15
 
 Gemini tự chọn agent dựa trên nội dung tài liệu:
 
-| Agent | ID | Loại tài liệu phù hợp |
-|-------|----|-----------------------|
-| Emma | `emma` | Requirements, user stories, functional specs |
-| Sarah | `sarah` | Stakeholder feedback, interview notes |
-| Jack | `jack` | Process flows, BPMN, workflow diagrams |
+| Agent | ID      | Loại tài liệu phù hợp                             |
+| ----- | ------- | ------------------------------------------------- |
+| Emma  | `emma`  | Requirements, user stories, functional specs      |
+| Sarah | `sarah` | Stakeholder feedback, interview notes             |
+| Jack  | `jack`  | Process flows, BPMN, workflow diagrams            |
 | David | `david` | Compliance, regulations, business rules, policies |
-| Paul | `paul` | Traceability matrix, RTM, test cases |
-| Alex | `alex` | Tổng quát, mixed, không rõ loại |
+| Paul  | `paul`  | Traceability matrix, RTM, test cases              |
+| Alex  | `alex`  | Tổng quát, mixed, không rõ loại                   |
 
 ---
 
@@ -464,19 +474,25 @@ backend/
 ## 10. Điểm cần lưu ý / Biết trước khi sửa
 
 ### RAG chạy đồng bộ (synchronous)
+
 Upload request sẽ chờ Gemini xong mới trả về. Ưu điểm: response có đủ RAG data ngay. Nhược điểm: nếu file lớn hoặc Gemini chậm, user phải đợi. Nếu cần cải thiện sau: chuyển sang background task (Celery, threading).
 
 ### Lazy RAG fallback
+
 Nếu vì lý do nào đó RAG pipeline bị lỗi lúc upload (`rag_processed_at = NULL`), khi user gắn tài liệu vào message, backend sẽ **tự chạy lại RAG** trước khi build context. Đây là safety net, không phải flow chính.
 
 ### Trang tính theo ước lượng (DOCX/TXT)
+
 DOCX và TXT không có khái niệm "trang" cứng, nên hệ thống ước lượng. Ước lượng có thể sai ±1-2 trang — có thể điều chỉnh hệ số `300` (words/page) và `1800` (chars/page) trong `document_parser.py`.
 
 ### `keywords` và `important_points` lưu JSON string
+
 Trong `Document` model, 2 column này là `TEXT` chứa JSON. `to_dict()` tự parse trả list. Nếu có lỗi parse (dữ liệu corrupt), fallback về `[]` — không raise exception.
 
 ### Agent `assigned_agent` chỉ là metadata
+
 `assigned_agent` lưu trong DB là gợi ý của Gemini, nhưng **không override** routing logic trong `agent_router.py`. Agent được chọn trả lời vẫn theo router dựa trên nội dung chat. `assigned_agent` chỉ xuất hiện trong context block inject vào prompt — agent đọc và biết tài liệu này "thuộc về" agent nào.
 
 ### Context inject, message DB vẫn sạch
+
 `agent_content` (có RAG context) chỉ tồn tại trong memory của request. Message lưu vào DB là `content` gốc của người dùng. Khi GET messages về, client không thấy context — đây là thiết kế có chủ đích để tránh làm lộn conversation history.

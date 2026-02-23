@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -31,7 +32,10 @@ import {
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useConversations, useTogglePinConversation } from "@/features/conversations/hooks";
+import {
+  useConversations,
+  useTogglePinConversation,
+} from "@/features/conversations/hooks";
 import type { Conversation } from "@/features/conversations/types";
 import { useDocuments } from "@/features/documents/hooks";
 import { DocumentListDialog } from "@/features/documents/components/document-list-dialog";
@@ -100,9 +104,7 @@ export function ConversationSidebar({
 
   const handleConversationCreated = (conversation: Conversation) => {
     setDialogOpen(false);
-    router.push(
-      `/projects/${projectId}/conversations/${conversation.id}`
-    );
+    router.push(`/projects/${projectId}/conversations/${conversation.id}`);
   };
 
   const handleConversationDeleted = () => {
@@ -112,12 +114,61 @@ export function ConversationSidebar({
     }
   };
 
+  /* ---- Find the currently active conversation object ---- */
+  const activeConversation =
+    conversations?.find((c) => c.id === activeConversationId) ?? null;
+
+  /* ---- F1 = Pin/Unpin · F2 = Rename · F3 = Delete (active conversation) ---- */
+  const handleGlobalKeyDown = useCallback(
+    (e: globalThis.KeyboardEvent) => {
+      // Only act when we have an active conversation and no dialog is open
+      if (!activeConversation) return;
+      if (dialogOpen || deleteDialogOpen) return;
+
+      // Ignore if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      switch (e.key) {
+        case "F1": {
+          e.preventDefault();
+          togglePin.mutate({
+            conversationId: activeConversation.id,
+            pinned: !activeConversation.pinned,
+          });
+          toast.success(
+            activeConversation.pinned ? "Đã bỏ ghim" : "Đã ghim cuộc hội thoại",
+          );
+          break;
+        }
+        case "F2": {
+          e.preventDefault();
+          setSelectedConversation(activeConversation);
+          setDialogOpen(true);
+          break;
+        }
+        case "F3": {
+          e.preventDefault();
+          setSelectedConversation(activeConversation);
+          setDeleteDialogOpen(true);
+          break;
+        }
+      }
+    },
+    [activeConversation, dialogOpen, deleteDialogOpen, togglePin],
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleGlobalKeyDown]);
+
   return (
     <>
       <aside
         className={cn(
           "bg-muted/50 border-r flex flex-col h-full transition-all duration-300",
-          collapsed ? "w-0 overflow-hidden" : "w-72"
+          collapsed ? "w-0 overflow-hidden" : "w-72",
         )}
       >
         {/* Header */}
@@ -125,7 +176,12 @@ export function ConversationSidebar({
           <div className="flex items-center gap-2 min-w-0">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-8 shrink-0" asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0"
+                  asChild
+                >
                   <Link href="/projects">
                     <ArrowLeft className="size-4" />
                   </Link>
@@ -227,7 +283,7 @@ export function ConversationSidebar({
                           href={`/projects/${projectId}/conversations/${conversation.id}`}
                           className={cn(
                             "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
-                            isActive && "bg-accent"
+                            isActive && "bg-accent",
                           )}
                         >
                           <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
@@ -241,7 +297,7 @@ export function ConversationSidebar({
                                 size="icon"
                                 className={cn(
                                   "size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
-                                  isActive && "opacity-100"
+                                  isActive && "opacity-100",
                                 )}
                                 onClick={(e) => e.preventDefault()}
                               >
@@ -253,20 +309,35 @@ export function ConversationSidebar({
                                 onClick={(e) => handlePin(e, conversation)}
                               >
                                 <PinOff className="size-4" />
-                                Bỏ ghim
+                                <span className="flex-1">Bỏ ghim</span>
+                                {isActive && (
+                                  <kbd className="ml-auto text-[10px] text-muted-foreground">
+                                    F1
+                                  </kbd>
+                                )}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => handleEdit(e, conversation)}
                               >
                                 <Pencil className="size-4" />
-                                Đổi tên
+                                <span className="flex-1">Đổi tên</span>
+                                {isActive && (
+                                  <kbd className="ml-auto text-[10px] text-muted-foreground">
+                                    F2
+                                  </kbd>
+                                )}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => handleDelete(e, conversation)}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="size-4" />
-                                Xóa
+                                <span className="flex-1">Xóa</span>
+                                {isActive && (
+                                  <kbd className="ml-auto text-[10px] text-muted-foreground">
+                                    F3
+                                  </kbd>
+                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -286,7 +357,7 @@ export function ConversationSidebar({
                       href={`/projects/${projectId}/conversations/${conversation.id}`}
                       className={cn(
                         "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
-                        isActive && "bg-accent"
+                        isActive && "bg-accent",
                       )}
                     >
                       <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
@@ -300,7 +371,7 @@ export function ConversationSidebar({
                             size="icon"
                             className={cn(
                               "size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
-                              isActive && "opacity-100"
+                              isActive && "opacity-100",
                             )}
                             onClick={(e) => e.preventDefault()}
                           >
@@ -312,20 +383,35 @@ export function ConversationSidebar({
                             onClick={(e) => handlePin(e, conversation)}
                           >
                             <Pin className="size-4" />
-                            Ghim
+                            <span className="flex-1">Ghim</span>
+                            {isActive && (
+                              <kbd className="ml-auto text-[10px] text-muted-foreground">
+                                F1
+                              </kbd>
+                            )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(e) => handleEdit(e, conversation)}
                           >
                             <Pencil className="size-4" />
-                            Đổi tên
+                            <span className="flex-1">Đổi tên</span>
+                            {isActive && (
+                              <kbd className="ml-auto text-[10px] text-muted-foreground">
+                                F2
+                              </kbd>
+                            )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(e) => handleDelete(e, conversation)}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="size-4" />
-                            Xóa
+                            <span className="flex-1">Xóa</span>
+                            {isActive && (
+                              <kbd className="ml-auto text-[10px] text-muted-foreground">
+                                F3
+                              </kbd>
+                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -336,6 +422,35 @@ export function ConversationSidebar({
             )}
           </div>
         </ScrollArea>
+
+        {/* Keyboard shortcut hints */}
+        {activeConversation && (
+          <div className="shrink-0 border-t px-3 py-2">
+            <p className="text-[10px] text-muted-foreground font-medium mb-1">
+              Phím tắt
+            </p>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+              <span>
+                <kbd className="rounded border bg-muted px-1 py-0.5 font-mono">
+                  F1
+                </kbd>{" "}
+                Ghim
+              </span>
+              <span>
+                <kbd className="rounded border bg-muted px-1 py-0.5 font-mono">
+                  F2
+                </kbd>{" "}
+                Đổi tên
+              </span>
+              <span>
+                <kbd className="rounded border bg-muted px-1 py-0.5 font-mono">
+                  F3
+                </kbd>{" "}
+                Xóa
+              </span>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Collapsed toggle button */}
