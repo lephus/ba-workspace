@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Field,
@@ -20,8 +19,9 @@ import {
 } from "@/components/ui/field";
 import { useUploadDocument } from "@/features/documents/hooks";
 
-const ACCEPTED_FORMATS = ".pdf,.docx,.txt";
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const ACCEPTED_FORMATS = ".pdf,.docx,.doc,.txt,.xlsx,.xls";
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ACCEPTED_EXTS = new Set(["pdf", "docx", "doc", "txt", "xlsx", "xls"]);
 
 interface UploadDocumentDialogProps {
   open: boolean;
@@ -69,15 +69,15 @@ export function UploadDocumentDialog({
 
     // Validate file type
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!ext || !["pdf", "docx", "txt"].includes(ext)) {
-      setFileError("Chỉ hỗ trợ định dạng PDF, DOCX, TXT");
+    if (!ext || !ACCEPTED_EXTS.has(ext)) {
+      setFileError("Chỉ hỗ trợ định dạng: PDF, DOCX, DOC, TXT, XLSX, XLS");
       setSelectedFile(null);
       return;
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      setFileError("Kích thước tệp tối đa là 20MB");
+      setFileError("Kích thước tệp tối đa là 5MB");
       setSelectedFile(null);
       return;
     }
@@ -127,7 +127,7 @@ export function UploadDocumentDialog({
         <DialogHeader>
           <DialogTitle>Tải lên tài liệu</DialogTitle>
           <DialogDescription>
-            Tải lên tài liệu liên quan đến dự án. Hỗ trợ PDF, DOCX, TXT.
+            Tải lên tài liệu liên quan đến dự án. Hỗ trợ PDF, DOCX, DOC, TXT, XLSX, XLS. Tối đa 5MB và 5 trang.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -144,7 +144,7 @@ export function UploadDocumentDialog({
                   Nhấn để chọn tệp
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  PDF, DOCX, TXT (tối đa 20MB)
+                  PDF, DOCX, DOC, TXT, Excel (tối đa 5MB • 5 trang)
                 </p>
               </div>
             ) : (

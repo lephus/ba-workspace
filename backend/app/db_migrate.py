@@ -68,3 +68,37 @@ def migrate_add_documents_notes(app):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+
+def migrate_add_documents_rag_fields(app):
+    """Add RAG fields to documents if missing (summary, keywords, important_points, assigned_agent, rag_processed_at)."""
+    columns = [
+        ("summary", "TEXT"),
+        ("keywords", "TEXT"),
+        ("important_points", "TEXT"),
+        ("assigned_agent", "VARCHAR(32)"),
+        ("rag_processed_at", "DATETIME"),
+    ]
+    with app.app_context():
+        for column, col_type in columns:
+            try:
+                db.session.execute(text(f"SELECT {column} FROM documents LIMIT 1"))
+            except Exception:
+                try:
+                    db.session.execute(text(f"ALTER TABLE documents ADD COLUMN {column} {col_type}"))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
+
+def migrate_add_message_attachments(app):
+    """Add attachments_json to messages if missing (for existing DBs)."""
+    with app.app_context():
+        try:
+            db.session.execute(text("SELECT attachments_json FROM messages LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE messages ADD COLUMN attachments_json TEXT"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()

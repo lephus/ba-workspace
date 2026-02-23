@@ -1,4 +1,5 @@
 """Message model."""
+import json
 from datetime import datetime
 
 from app.models import db
@@ -15,11 +16,18 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     agent_id = db.Column(db.String(32), nullable=True)  # for assistant: which bot replied (paul, emma, sarah, david, alex)
+    attachments_json = db.Column(db.Text, nullable=True)  # JSON array of {type, id?, filename}
 
     conversation = db.relationship("Conversation", back_populates="messages")
 
     def to_dict(self):
-        return {
+        attachments = []
+        if self.attachments_json:
+            try:
+                attachments = json.loads(self.attachments_json)
+            except (json.JSONDecodeError, TypeError):
+                attachments = []
+        d = {
             "id": self.id,
             "conversation_id": self.conversation_id,
             "role": self.role,
@@ -27,3 +35,6 @@ class Message(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "agent_id": self.agent_id,
         }
+        if attachments:
+            d["attachments"] = attachments
+        return d

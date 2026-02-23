@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { FileText, Paperclip, SendHorizontal, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { MessageAttachment } from "@/features/messages/types";
 import {
@@ -89,9 +90,28 @@ export function ChatInput({
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    const newFiles = Array.from(files);
-    setSelectedNewFiles((prev) => [...prev, ...newFiles]);
-    onAttach?.(newFiles);
+
+    const ACCEPTED = new Set([".txt", ".doc", ".docx", ".pdf", ".xlsx", ".xls"]);
+    const MAX_BYTES = 5 * 1024 * 1024;
+    const validFiles: File[] = [];
+
+    Array.from(files).forEach((file) => {
+      const ext = "." + (file.name.split(".").pop() ?? "").toLowerCase();
+      if (!ACCEPTED.has(ext)) {
+        toast.error(`"${file.name}" — định dạng không hỗ trợ. Chỉ chấp nhận: txt, doc, docx, pdf, xlsx, xls`);
+        return;
+      }
+      if (file.size > MAX_BYTES) {
+        toast.error(`"${file.name}" — vượt quá 5MB`);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (validFiles.length > 0) {
+      setSelectedNewFiles((prev) => [...prev, ...validFiles]);
+      onAttach?.(validFiles);
+    }
     e.target.value = "";
   };
 
@@ -215,7 +235,7 @@ export function ChatInput({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.ppt,.pptx"
+            accept=".txt,.doc,.docx,.pdf,.xlsx,.xls"
             multiple
             className="hidden"
             onChange={handleFileChange}
