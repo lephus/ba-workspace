@@ -24,6 +24,7 @@ import { MessageBubble } from "./message-bubble";
 import { ChatInput } from "./chat-input";
 import { AgentPanel } from "./agent-panel";
 import { RateLimitIndicator } from "@/features/messages/components/rate-limit-indicator";
+import { ChatToc } from "./chat-toc";
 
 interface ChatAreaProps {
   projectId: number;
@@ -224,6 +225,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
       <AgentPanel activeAgentIds={activeAgentIds} />
 
       {/* Messages area */}
+      {messages && messages.length > 0 && <ChatToc messages={messages} />}
       <ScrollArea className="flex-1 min-h-0">
         <div className="mx-auto max-w-3xl">
           {messagesLoading ? (

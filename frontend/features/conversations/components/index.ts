@@ -6,3 +6,4 @@ export { ChatArea } from "./chat-area";
 export { ChatInput } from "./chat-input";
 export { MessageBubble } from "./message-bubble";
 export { AgentPanel } from "./agent-panel";
+export { ChatToc } from "./chat-toc";
