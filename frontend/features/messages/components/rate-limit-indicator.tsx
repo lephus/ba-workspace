@@ -204,7 +204,9 @@ function StatusIcon({
           className={`${ringColor} transition-all duration-500`}
         />
       </svg>
-      <span className={`absolute text-[9px] font-bold tabular-nums ${ringColor}`}>
+      <span
+        className={`absolute text-[9px] font-bold tabular-nums ${ringColor}`}
+      >
         {clampedPct}
       </span>
     </div>
