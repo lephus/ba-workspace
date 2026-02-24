@@ -9,6 +9,7 @@ import {
   pinMessageApi,
   unpinMessageApi,
 } from "./api";
+import { getRateLimitApi } from "./rate-limit-api";
 import type {
   Message,
   SendMessageInput,
@@ -68,9 +69,10 @@ export function useSendMessage(projectId: number, conversationId: number) {
         attachments: data.attachments,
       };
 
-      queryClient.setQueryData<Message[]>(key, (old) =>
-        [...(old ?? []), optimisticMsg]
-      );
+      queryClient.setQueryData<Message[]>(key, (old) => [
+        ...(old ?? []),
+        optimisticMsg,
+      ]);
 
       return { previous };
     },
@@ -78,10 +80,10 @@ export function useSendMessage(projectId: number, conversationId: number) {
       // Replace optimistic data with real server data
       queryClient.setQueryData<Message[]>(key, (old) => {
         // Remove the optimistic user message (temp id) and append server messages
-        const withoutOptimistic = (old ?? []).filter(
-          (m) => m.id !== response.message.id && m.id >= 1e12
+        const withoutOptimistic = (old ?? []).filter((m) =>
+          m.id !== response.message.id && m.id >= 1e12
             ? false // remove temp messages
-            : true
+            : true,
         );
         // Simpler: keep all real messages, remove temp ones, then append server response
         const real = (old ?? []).filter((m) => m.id < 1e12);
@@ -97,16 +99,26 @@ export function useSendMessage(projectId: number, conversationId: number) {
       if (context?.previous) {
         queryClient.setQueryData<Message[]>(key, context.previous);
       }
+      // Invalidate rate-limit so indicator updates immediately
+      queryClient.invalidateQueries({ queryKey: ["rate-limit"] });
       toast.error(_error.message || "Gửi tin nhắn thất bại");
     },
   });
 }
 
+// Hook lấy rate-limit status
+export function useRateLimit() {
+  return useQuery({
+    queryKey: ["rate-limit"],
+    queryFn: getRateLimitApi,
+    refetchInterval: 10_000,
+    staleTime: 5_000,
+    retry: false,
+  });
+}
+
 // Hook lấy danh sách pinned messages
-export function usePinnedMessages(
-  projectId: number,
-  conversationId: number
-) {
+export function usePinnedMessages(projectId: number, conversationId: number) {
   return useQuery({
     queryKey: pinnedMessagesKey(projectId, conversationId),
     queryFn: () => getPinnedMessagesApi(projectId, conversationId),

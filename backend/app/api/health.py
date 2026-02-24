@@ -3,6 +3,8 @@ from flask import Blueprint, jsonify
 from sqlalchemy import text
 
 from app.models import db
+from app.services.gemini_client import validate_api_key
+from app.services.rate_limiter import get_status as get_rate_limit_status
 
 bp = Blueprint("health", __name__)
 
@@ -37,3 +39,21 @@ def health():
         "version": VERSION,
         "database": "connected" if db_ok else "disconnected",
     })
+
+
+@bp.route("/rate-limit", methods=["GET"])
+def rate_limit():
+    """
+    Gemini API rate-limit and key status.
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: Rate-limit info including key validity and quota status
+    """
+    key_info = validate_api_key()
+    status = get_rate_limit_status()
+    status["key_valid"] = key_info["valid"]
+    status["key_error"] = key_info["error"]
+    return jsonify(status)

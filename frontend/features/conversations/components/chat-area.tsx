@@ -23,6 +23,7 @@ import type { MessageAttachment } from "@/features/messages/types";
 import { MessageBubble } from "./message-bubble";
 import { ChatInput } from "./chat-input";
 import { AgentPanel } from "./agent-panel";
+import { RateLimitIndicator } from "@/features/messages/components/rate-limit-indicator";
 
 interface ChatAreaProps {
   projectId: number;
@@ -160,6 +161,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
               {conversation?.title || "Cuộc hội thoại"}
             </h2>
           </div>
+          <RateLimitIndicator />
           {pinnedMessages && pinnedMessages.length > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
