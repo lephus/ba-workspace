@@ -11,14 +11,14 @@ const API_URL = APP_CONFIG.API_URL;
 // GET /projects/:projectId/conversations/:conversationId/messages
 export async function getMessagesApi(
   projectId: number,
-  conversationId: number
+  conversationId: number,
 ): Promise<Message[]> {
   const response = await fetch(
     `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -35,7 +35,7 @@ export async function getMessagesApi(
 export async function sendMessageApi(
   projectId: number,
   conversationId: number,
-  data: SendMessageInput
+  data: SendMessageInput,
 ): Promise<SendMessageResponse> {
   const response = await fetch(
     `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages`,
@@ -43,12 +43,22 @@ export async function sendMessageApi(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }
+    },
   );
 
   if (!response.ok) {
     if (response.status === 404) {
       throw new Error("Không tìm thấy cuộc hội thoại");
+    }
+    if (response.status === 429) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || "Gemini API đang bị giới hạn. Vui lòng đợi.",
+      );
+    }
+    if (response.status === 401) {
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.error || "API key không hợp lệ hoặc đã hết hạn.");
     }
     if (response.status === 500) {
       throw new Error("Agent xử lý thất bại. Vui lòng thử lại.");
@@ -62,14 +72,14 @@ export async function sendMessageApi(
 // GET /projects/:projectId/conversations/:conversationId/pinned-messages
 export async function getPinnedMessagesApi(
   projectId: number,
-  conversationId: number
+  conversationId: number,
 ): Promise<PinnedMessage[]> {
   const response = await fetch(
     `${API_URL}/projects/${projectId}/conversations/${conversationId}/pinned-messages`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -86,14 +96,14 @@ export async function getPinnedMessagesApi(
 export async function pinMessageApi(
   projectId: number,
   conversationId: number,
-  messageId: number
+  messageId: number,
 ): Promise<PinnedMessage> {
   const response = await fetch(
     `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/pin`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -113,14 +123,14 @@ export async function pinMessageApi(
 export async function unpinMessageApi(
   projectId: number,
   conversationId: number,
-  messageId: number
+  messageId: number,
 ): Promise<void> {
   const response = await fetch(
     `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/pin`,
     {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-    }
+    },
   );
 
   if (!response.ok) {

@@ -7,6 +7,8 @@ from app.services.content_normalizer import normalize_user_content
 from app.services.conversation_agent import get_agent_reply, get_conversation_bot
 from app.services.export_detector import detect_export_format
 from app.services.export_service import EXPORT_EXT, save_export_to_project
+from app.services.gemini_client import GeminiRateLimitError, GeminiAuthError
+from app.services.rate_limiter import get_status as get_rate_limit_status
 
 bp = Blueprint("messages", __name__)
 
@@ -287,6 +289,14 @@ def create_message(project_id, conversation_id):
     if role == "user":
         try:
             reply_text, selected_agent_ids = get_agent_reply(conv.id, agent_content)
+        except GeminiRateLimitError as e:
+            db.session.rollback()
+            status = get_rate_limit_status()
+            return jsonify({"error": str(e), "rate_limit": status}), 429
+        except GeminiAuthError as e:
+            db.session.rollback()
+            status = get_rate_limit_status()
+            return jsonify({"error": str(e), "rate_limit": status}), 401
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": f"Agent failed: {str(e)}"}), 500

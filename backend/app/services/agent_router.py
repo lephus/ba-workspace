@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from app.services.gemini_client import get_model
+from app.services.gemini_client import generate_text
 
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONVERSATION_AGENTS_CONFIG = (
@@ -60,9 +60,7 @@ def route_to_agents(user_message: str) -> list[str]:
     if not agents:
         return ["alex"]
     prompt = _build_router_prompt(agents, user_message or "")
-    model = get_model()
-    response = model.generate_content(prompt)
-    text = (response.text or "").strip()
+    text = generate_text(prompt).strip()
     # Parse JSON array from response (allow trailing text)
     match = re.search(r"\[[\s\S]*?\]", text)
     if not match:
