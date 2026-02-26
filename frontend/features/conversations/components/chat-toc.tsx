@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Message } from "@/features/messages/types";
 
 /* ------------------------------------------------------------------ */
@@ -12,7 +11,6 @@ import type { Message } from "@/features/messages/types";
 interface TocEntry {
   id: number;
   preview: string;
-  /** 0 = user question (top-level), 1 = assistant reply */
   depth: number;
 }
 
@@ -25,16 +23,14 @@ interface ChatTocProps {
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-/** Truncate text to maxLen chars */
 function truncate(text: string, maxLen: number): string {
   const single = text.replace(/\s+/g, " ").trim();
   return single.length > maxLen ? single.slice(0, maxLen) + "…" : single;
 }
 
-/** Bar widths by depth (Notion-style) */
 const BAR_WIDTH: Record<number, string> = {
-  0: "w-4", // 16px — user message
-  1: "w-3", // 12px — assistant reply
+  0: "w-4",
+  1: "w-3",
 };
 
 const BAR_INDENT: Record<number, string> = {
@@ -51,6 +47,8 @@ export function ChatToc({ messages, className }: ChatTocProps) {
   const [activeId, setActiveId] = useState<number | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const tocRef = useRef<HTMLDivElement>(null);
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const visibleSetRef = useRef<Set<number>>(new Set());
 
   // Build TOC entries from user messages only
   const entries: TocEntry[] = messages
@@ -61,9 +59,32 @@ export function ChatToc({ messages, className }: ChatTocProps) {
       depth: 0,
     }));
 
-  // Track which message is currently in viewport
+  // Stable hover handlers with small delay to prevent child-element flickering
+  const handleMouseEnter = useCallback(() => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    setHovered(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    leaveTimerRef.current = setTimeout(() => {
+      setHovered(false);
+    }, 80);
+  }, []);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    };
+  }, []);
+
+  // Track which message is currently in viewport (topmost wins)
   useEffect(() => {
     observerRef.current?.disconnect();
+    visibleSetRef.current.clear();
 
     const userMessageIds = entries.map((e) => e.id);
     const elements = userMessageIds
@@ -74,22 +95,32 @@ export function ChatToc({ messages, className }: ChatTocProps) {
 
     const observer = new IntersectionObserver(
       (intersections) => {
-        // Pick the first visible entry
         for (const entry of intersections) {
+          const id = Number(entry.target.id.replace("message-", ""));
           if (entry.isIntersecting) {
-            const id = Number(entry.target.id.replace("message-", ""));
-            setActiveId(id);
-            break;
+            visibleSetRef.current.add(id);
+          } else {
+            visibleSetRef.current.delete(id);
           }
         }
+        // Always pick the topmost visible message (preserves order)
+        const topmost = userMessageIds.find((id) =>
+          visibleSetRef.current.has(id),
+        );
+        if (topmost !== undefined) {
+          setActiveId(topmost);
+        }
       },
-      { threshold: 0.3 },
+      { threshold: 0.2 },
     );
 
     elements.forEach((el) => observer.observe(el));
     observerRef.current = observer;
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      visibleSetRef.current.clear();
+    };
   }, [entries.map((e) => e.id).join(",")]);
 
   const scrollToMessage = useCallback((messageId: number) => {
@@ -97,9 +128,7 @@ export function ChatToc({ messages, className }: ChatTocProps) {
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("bg-primary/5");
-      setTimeout(() => {
-        el.classList.remove("bg-primary/5");
-      }, 1500);
+      setTimeout(() => el.classList.remove("bg-primary/5"), 1500);
     }
   }, []);
 
@@ -109,33 +138,40 @@ export function ChatToc({ messages, className }: ChatTocProps) {
     <div
       ref={tocRef}
       className={cn(
-        "fixed right-4 top-1/2 -translate-y-1/2 z-30 transition-all duration-300 ease-in-out",
+        "fixed right-4 top-1/2 -translate-y-1/2 z-30",
+        "transition-[width] duration-300 ease-in-out",
         hovered ? "w-56" : "w-7",
         className,
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div
         className={cn(
-          "rounded-lg transition-all duration-300",
-          hovered ? "bg-popover border shadow-lg" : "bg-transparent",
+          "relative rounded-lg transition-[background-color,border-color,box-shadow] duration-300",
+          // Cap height to viewport so popup never overflows top/bottom
+          hovered
+            ? "bg-popover border shadow-lg flex flex-col max-h-[calc(100vh-4rem)]"
+            : "bg-transparent border-transparent shadow-none",
         )}
       >
-        {/* Collapsed: minimap bars */}
+        {/* ── Collapsed view: minimap bars ── */}
         <div
+          aria-hidden={hovered}
           className={cn(
-            "flex flex-col gap-2.5 py-3 transition-all duration-200",
+            "flex flex-col gap-2.5 pl-1.5 py-3",
+            "transition-opacity duration-200 ease-in-out",
+            // absolute when hovered so it doesn't affect container height
             hovered
-              ? "px-3 opacity-0 h-0 py-0 overflow-hidden"
-              : "pl-1.5 opacity-100",
+              ? "opacity-0 pointer-events-none absolute inset-0"
+              : "opacity-100 relative",
           )}
         >
           {entries.map((entry) => (
             <div key={entry.id} className={BAR_INDENT[entry.depth]}>
               <div
                 className={cn(
-                  "h-0.5 rounded-full transition-all duration-200",
+                  "h-0.5 rounded-full transition-colors duration-200",
                   BAR_WIDTH[entry.depth],
                   activeId === entry.id
                     ? "bg-foreground shadow-[0_0_3px_var(--foreground)]"
@@ -146,19 +182,45 @@ export function ChatToc({ messages, className }: ChatTocProps) {
           ))}
         </div>
 
-        {/* Expanded: text list */}
+        {/* ── Expanded view: scrollable list ── */}
+        {/*
+          We render this as absolute while collapsed so it doesn't affect
+          the container's height, and transition only opacity + translate.
+          pointer-events-none prevents invisible items from being clicked.
+        */}
         <div
+          aria-hidden={!hovered}
           className={cn(
-            "transition-all duration-300 overflow-hidden",
-            hovered ? "opacity-100 max-h-80" : "opacity-0 max-h-0",
+            "flex flex-col",
+            "transition-[opacity,transform] duration-300 ease-in-out",
+            hovered
+              ? "opacity-100 translate-x-0 pointer-events-auto relative"
+              : "opacity-0 -translate-x-1 pointer-events-none absolute inset-0",
           )}
         >
-          <div className="px-3 pt-2.5 pb-1.5">
+          <div className="px-3 pt-2.5 pb-1.5 shrink-0">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Câu hỏi
             </span>
           </div>
-          <ScrollArea className="max-h-64">
+          {/*
+            Native scroll: Radix ScrollArea Viewport uses height:100% internally,
+            which requires an explicit pixel height on the Root — incompatible with
+            flex-1 / max-height. A plain div with overflow-y-auto is reliable.
+          */}
+          <div
+            className={cn(
+              "overflow-y-auto overscroll-contain",
+              // cap at viewport minus: 4rem outer margin + ~2.5rem header
+              "max-h-[calc(100vh-16rem)]",
+              // thin custom scrollbar
+              "[&::-webkit-scrollbar]:w-1",
+              "[&::-webkit-scrollbar-track]:bg-transparent",
+              "[&::-webkit-scrollbar-thumb]:rounded-full",
+              "[&::-webkit-scrollbar-thumb]:bg-border",
+              "[&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/40",
+            )}
+          >
             <div className="flex flex-col gap-0.5 px-1.5 pb-2">
               {entries.map((entry, idx) => (
                 <button
@@ -166,23 +228,24 @@ export function ChatToc({ messages, className }: ChatTocProps) {
                   type="button"
                   onClick={() => scrollToMessage(entry.id)}
                   className={cn(
-                    "flex items-start gap-2 text-left rounded-md px-2 py-1.5 text-xs transition-colors cursor-pointer",
+                    "flex items-start gap-2 text-left rounded-md px-2 py-1.5 text-xs",
+                    "transition-colors duration-150 cursor-pointer",
                     "hover:bg-muted",
                     activeId === entry.id
                       ? "text-foreground font-medium bg-muted/60"
                       : "text-muted-foreground",
                   )}
                 >
-                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60 mt-px w-3 text-right">
+                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60 mt-px w-4 text-right">
                     {idx + 1}
                   </span>
-                  <span className="line-clamp-2 leading-snug">
+                  <span className="line-clamp-2 leading-snug min-w-0">
                     {entry.preview}
                   </span>
                 </button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </div>
     </div>
