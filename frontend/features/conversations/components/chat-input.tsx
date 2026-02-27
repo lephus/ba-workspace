@@ -114,6 +114,7 @@ export function ChatInput({
   disabled,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [selectedExistingIds, setSelectedExistingIds] = useState<number[]>([]);
   const [selectedNewFiles, setSelectedNewFiles] = useState<File[]>([]);
   const [mentionedAgents, setMentionedAgents] = useState<string[]>([]);
@@ -541,13 +542,18 @@ export function ChatInput({
 
     if (validFiles.length > 0) {
       if (onAttach) {
-        // Upload files to backend and auto-select successful uploads
-        const uploadedIds = await onAttach(validFiles);
-        if (uploadedIds.length > 0) {
-          setSelectedExistingIds((prev) => [
-            ...prev,
-            ...uploadedIds.filter((id) => !prev.includes(id)),
-          ]);
+        setIsUploadingFile(true);
+        try {
+          // Upload files to backend and auto-select successful uploads
+          const uploadedIds = await onAttach(validFiles);
+          if (uploadedIds.length > 0) {
+            setSelectedExistingIds((prev) => [
+              ...prev,
+              ...uploadedIds.filter((id) => !prev.includes(id)),
+            ]);
+          }
+        } finally {
+          setIsUploadingFile(false);
         }
       } else {
         // Fallback: just track files locally
@@ -801,10 +807,14 @@ export function ChatInput({
                   variant="ghost"
                   size="icon"
                   className="size-9 rounded-full"
-                  disabled={isLoading || disabled}
+                  disabled={isLoading || disabled || isUploadingFile}
                   aria-label="Đính kèm tệp"
                 >
-                  <Paperclip className="size-5" />
+                  {isUploadingFile ? (
+                    <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <Paperclip className="size-5" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72">
