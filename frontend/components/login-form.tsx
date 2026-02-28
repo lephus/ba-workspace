@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,32 +18,34 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const t = useTranslations('auth.login')
+
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Welcome back</h1>
+          <h1 className="text-2xl font-bold">{t('heading')}</h1>
           <p className="text-muted-foreground text-sm text-balance">
-            Enter your credentials to sign in to your account
+            {t('subheading')}
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email">{t('email')}</FieldLabel>
           <Input id="email" type="email" placeholder="m@example.com" required />
         </Field>
         <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <FieldLabel htmlFor="password">{t('password')}</FieldLabel>
           <Input id="password" type="password" required />
           <FieldDescription>
             <a href="#" className="hover:underline">
-              Forgot your password?
+              {t('forgotPassword')}
             </a>
           </FieldDescription>
         </Field>
         <Field>
-          <Button type="submit">Sign In</Button>
+          <Button type="submit">{t('signIn')}</Button>
         </Field>
-        <FieldSeparator>Or continue with</FieldSeparator>
+        <FieldSeparator>{t('orContinueWith')}</FieldSeparator>
         <Field>
           <Button variant="outline" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -49,10 +54,10 @@ export function LoginForm({
                 fill="currentColor"
               />
             </svg>
-            Sign in with GitHub
+            {t('signInWithGithub')}
           </Button>
           <FieldDescription className="px-6 text-center">
-            Don&apos;t have an account? <Link href="/signup">Sign up</Link>
+            {t('noAccount')}{' '}<Link href="/signup">{t('signUp')}</Link>
           </FieldDescription>
         </Field>
       </FieldGroup>

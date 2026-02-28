@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,43 +18,44 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const t = useTranslations('auth.signup')
+
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Create your account</h1>
+          <h1 className="text-2xl font-bold">{t('heading')}</h1>
           <p className="text-muted-foreground text-sm text-balance">
-            Fill in the form below to create your account
+            {t('subheading')}
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="name">Full Name</FieldLabel>
-          <Input id="name" type="text" placeholder="John Doe" required />
+          <FieldLabel htmlFor="name">{t('fullName')}</FieldLabel>
+          <Input id="name" type="text" placeholder={t('fullNamePlaceholder')} required />
         </Field>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <FieldLabel htmlFor="email">{t('email')}</FieldLabel>
+          <Input id="email" type="email" placeholder={t('emailPlaceholder')} required />
           <FieldDescription>
-            We&apos;ll use this to contact you. We will not share your email
-            with anyone else.
+            {t('emailNote')}
           </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <FieldLabel htmlFor="password">{t('password')}</FieldLabel>
           <Input id="password" type="password" required />
           <FieldDescription>
-            Must be at least 8 characters long.
+            {t('passwordNote')}
           </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
+          <FieldLabel htmlFor="confirm-password">{t('confirmPassword')}</FieldLabel>
           <Input id="confirm-password" type="password" required />
-          <FieldDescription>Please confirm your password.</FieldDescription>
+          <FieldDescription>{t('confirmPasswordNote')}</FieldDescription>
         </Field>
         <Field>
-          <Button type="submit">Create Account</Button>
+          <Button type="submit">{t('createAccount')}</Button>
         </Field>
-        <FieldSeparator>Or continue with</FieldSeparator>
+        <FieldSeparator>{t('orContinueWith')}</FieldSeparator>
         <Field>
           <Button variant="outline" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -60,10 +64,10 @@ export function SignupForm({
                 fill="currentColor"
               />
             </svg>
-            Sign up with GitHub
+            {t('signUpWithGithub')}
           </Button>
           <FieldDescription className="px-6 text-center">
-            Already have an account? <Link href="/login">Sign in</Link>
+            {t('alreadyHaveAccount')}{' '}<Link href="/login">{t('signIn')}</Link>
           </FieldDescription>
         </Field>
       </FieldGroup>

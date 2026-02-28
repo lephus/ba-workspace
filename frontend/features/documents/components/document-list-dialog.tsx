@@ -1,15 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Plus,
-  Trash2,
-  FileText,
-  FileType,
-  Upload,
-  Info,
-  Sparkles,
-} from "lucide-react";
+import { Plus, Trash2, FileText, FileType, Upload, Info, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -58,18 +52,19 @@ function DocumentTableSkeleton() {
 }
 
 function EmptyState({ onUploadClick }: { onUploadClick: () => void }) {
+  const t = useTranslations('documents');
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="bg-muted mb-4 flex size-12 items-center justify-center rounded-full">
         <FileText className="text-muted-foreground size-6" />
       </div>
-      <h3 className="text-lg font-semibold">Chưa có tài liệu nào</h3>
+      <h3 className="text-lg font-semibold">{t('empty.title')}</h3>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-        Tải lên tài liệu liên quan đến dự án để bắt đầu phân tích.
+        {t('empty.description')}
       </p>
       <Button className="mt-4" onClick={onUploadClick}>
         <Upload className="size-4" />
-        Tải lên tài liệu
+        {t('uploadTitle')}
       </Button>
     </div>
   );
@@ -111,6 +106,8 @@ export function DocumentListDialog({
     isError,
     error,
   } = useDocuments(projectId);
+  const t = useTranslations('documents');
+  const tc = useTranslations('common');
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -146,7 +143,7 @@ export function DocumentListDialog({
               <div>
                 <SheetTitle className="flex items-center gap-2">
                   <FileText className="size-5" />
-                  Tài liệu
+                  {t('title')}
                   {documents && documents.length > 0 && (
                     <Badge variant="secondary" className="ml-1">
                       {documents.length}
@@ -154,12 +151,12 @@ export function DocumentListDialog({
                   )}
                 </SheetTitle>
                 <SheetDescription>
-                  Quản lý tài liệu liên quan đến dự án.
+                  {t('description')}
                 </SheetDescription>
               </div>
               <Button size="sm" onClick={handleUpload}>
                 <Plus className="size-4" />
-                Tải lên
+                {t('upload')}
               </Button>
             </div>
           </SheetHeader>
@@ -171,7 +168,7 @@ export function DocumentListDialog({
               ) : isError ? (
                 <div className="py-8 text-center">
                   <p className="text-destructive">
-                    {error?.message || "Đã xảy ra lỗi khi tải dữ liệu."}
+                    {error?.message || tc('errorLoading')}
                   </p>
                 </div>
               ) : !documents || documents.length === 0 ? (
@@ -180,10 +177,10 @@ export function DocumentListDialog({
                 <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-auto">Tên tệp</TableHead>
-                      <TableHead className="w-20">Loại</TableHead>
-                      <TableHead className="w-24">Kích thước</TableHead>
-                      <TableHead className="w-32">Ngày tải</TableHead>
+                      <TableHead className="w-auto">{t('fileName')}</TableHead>
+                      <TableHead className="w-20">{t('type')}</TableHead>
+                      <TableHead className="w-24">{t('size')}</TableHead>
+                      <TableHead className="w-32">{t('uploadedAt')}</TableHead>
                       <TableHead className="w-10" />
                     </TableRow>
                   </TableHeader>
@@ -209,8 +206,8 @@ export function DocumentListDialog({
                                 <span className="inline-flex items-center gap-1 text-xs text-primary mt-0.5">
                                   <Sparkles className="size-3" />
                                   {doc.assigned_agent
-                                    ? `Agent: ${doc.assigned_agent}`
-                                    : "Đã phân tích"}
+                                    ? `${t('agent')}: ${doc.assigned_agent}`
+                                    : t('aiProcessed')}
                                 </span>
                               )}
                             </div>
@@ -246,7 +243,7 @@ export function DocumentListDialog({
                                   </span>
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Xem phân tích AI</TooltipContent>
+                              <TooltipContent>{t('viewAiAnalysis')}</TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -260,7 +257,7 @@ export function DocumentListDialog({
                                   <span className="sr-only">Xóa</span>
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Xóa tài liệu</TooltipContent>
+                              <TooltipContent>{t('deleteTitle')}</TooltipContent>
                             </Tooltip>
                           </div>
                         </TableCell>

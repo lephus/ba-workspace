@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/features/messages/types";
+import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "next-intl";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -15,7 +17,8 @@ interface TocEntry {
 }
 
 interface ChatTocProps {
-  messages: Message[];
+  messages?: Message[]; // Changed to optional with default
+  headings?: any[]; // Added headings, type unknown from diff
   className?: string;
 }
 
@@ -42,7 +45,16 @@ const BAR_INDENT: Record<number, string> = {
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
 
-export function ChatToc({ messages, className }: ChatTocProps) {
+// Placeholder for useHeadings as it's not provided in the diff
+const useHeadings = () => ({
+  registerHeading: () => { },
+  unregisterHeading: () => { },
+});
+
+export function ChatToc({ messages = [], headings = [], className }: ChatTocProps) {
+  const { registerHeading, unregisterHeading } = useHeadings();
+  const tc = useTranslations('common');
+
   const [hovered, setHovered] = useState(false);
   const [activeId, setActiveId] = useState<number | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -199,8 +211,8 @@ export function ChatToc({ messages, className }: ChatTocProps) {
           )}
         >
           <div className="px-3 pt-2.5 pb-1.5 shrink-0">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Câu hỏi
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              {tc('question')}
             </span>
           </div>
           {/*

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export interface Agent {
   id: string;
@@ -80,6 +81,7 @@ interface AgentPanelProps {
 
 export function AgentPanel({ activeAgentIds }: AgentPanelProps) {
   const [expanded, setExpanded] = useState(false);
+  const t = useTranslations('agents');
 
   return (
     <div className="border-b">
@@ -88,7 +90,7 @@ export function AgentPanel({ activeAgentIds }: AgentPanelProps) {
         <div className="flex items-center gap-1.5">
           <Users className="size-4 text-muted-foreground" />
           <span className="text-xs font-medium text-muted-foreground">
-            AI Team
+            {t('aiTeam')}
           </span>
         </div>
 
@@ -127,7 +129,7 @@ export function AgentPanel({ activeAgentIds }: AgentPanelProps) {
 
         {activeAgentIds && activeAgentIds.length > 0 && (
           <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
-            {activeAgentIds.length} active
+            {activeAgentIds.length} {t('active')}
           </Badge>
         )}
 
@@ -137,7 +139,7 @@ export function AgentPanel({ activeAgentIds }: AgentPanelProps) {
           className="ml-auto h-6 gap-1 text-xs text-muted-foreground"
           onClick={() => setExpanded(!expanded)}
         >
-          {expanded ? "Ẩn" : "Chi tiết"}
+          {expanded ? t('hide') : t('details')}
           {expanded ? (
             <ChevronUp className="size-3" />
           ) : (

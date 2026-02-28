@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -59,18 +60,19 @@ function DocumentTableSkeleton() {
 }
 
 function EmptyState({ onUploadClick }: { onUploadClick: () => void }) {
+  const t = useTranslations('documents');
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="bg-muted mb-4 flex size-12 items-center justify-center rounded-full">
         <FileText className="text-muted-foreground size-6" />
       </div>
-      <h3 className="text-lg font-semibold">Chưa có tài liệu nào</h3>
+      <h3 className="text-lg font-semibold">{t('empty.title')}</h3>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-        Tải lên tài liệu liên quan đến dự án để bắt đầu phân tích.
+        {t('empty.description')}
       </p>
       <Button className="mt-4" onClick={onUploadClick}>
         <Plus className="size-4" />
-        Tải lên tài liệu
+        {t('upload')}
       </Button>
     </div>
   );
@@ -100,6 +102,9 @@ interface DocumentListProps {
 }
 
 export function DocumentList({ projectId }: DocumentListProps) {
+  const t = useTranslations('documents');
+  const tc = useTranslations('common');
+
   const {
     data: documents,
     isLoading,
@@ -147,18 +152,18 @@ export function DocumentList({ projectId }: DocumentListProps) {
                     </Link>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Quay lại cuộc hội thoại</TooltipContent>
+                <TooltipContent>{t('backToConversations')}</TooltipContent>
               </Tooltip>
               <div>
-                <CardTitle>Tài liệu</CardTitle>
+                <CardTitle>{t('title')}</CardTitle>
                 <CardDescription>
-                  Quản lý tài liệu liên quan đến dự án.
+                  {t('description')}
                 </CardDescription>
               </div>
             </div>
             <Button onClick={handleUpload}>
               <Plus className="size-4" />
-              Tải lên
+              {t('upload')}
             </Button>
           </div>
         </CardHeader>
@@ -168,7 +173,7 @@ export function DocumentList({ projectId }: DocumentListProps) {
           ) : isError ? (
             <div className="py-8 text-center">
               <p className="text-destructive">
-                {error?.message || "Đã xảy ra lỗi khi tải dữ liệu."}
+                {error?.message || tc('errorLoading')}
               </p>
             </div>
           ) : !documents || documents.length === 0 ? (
@@ -177,11 +182,11 @@ export function DocumentList({ projectId }: DocumentListProps) {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">ID</TableHead>
-                  <TableHead className="w-auto">Tên tệp</TableHead>
-                  <TableHead className="w-24">Loại</TableHead>
-                  <TableHead className="w-28">Kích thước</TableHead>
-                  <TableHead className="w-44">Ngày tải lên</TableHead>
+                  <TableHead className="w-16">{tc('id')}</TableHead>
+                  <TableHead className="w-auto">{t('fileName')}</TableHead>
+                  <TableHead className="w-24">{t('type')}</TableHead>
+                  <TableHead className="w-28">{t('size')}</TableHead>
+                  <TableHead className="w-44">{t('uploadedAt')}</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -210,8 +215,8 @@ export function DocumentList({ projectId }: DocumentListProps) {
                             <span className="inline-flex items-center gap-1 text-xs text-primary mt-0.5">
                               <Sparkles className="size-3" />
                               {doc.assigned_agent
-                                ? `Agent: ${doc.assigned_agent}`
-                                : "Đã phân tích AI"}
+                                ? `${t('agent')}: ${doc.assigned_agent}`
+                                : t('aiProcessed')}
                             </span>
                           )}
                         </div>
@@ -239,10 +244,10 @@ export function DocumentList({ projectId }: DocumentListProps) {
                               onClick={() => handleViewRag(doc)}
                             >
                               <Info className="size-4" />
-                              <span className="sr-only">Xem chi tiết AI</span>
+                              <span className="sr-only">{t('viewAiDetail')}</span>
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Xem phân tích AI</TooltipContent>
+                          <TooltipContent>{t('viewAiAnalysis')}</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -253,10 +258,10 @@ export function DocumentList({ projectId }: DocumentListProps) {
                               onClick={() => handleDelete(doc)}
                             >
                               <Trash2 className="size-4" />
-                              <span className="sr-only">Xóa</span>
+                              <span className="sr-only">{tc('delete')}</span>
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Xóa tài liệu</TooltipContent>
+                          <TooltipContent>{t('deleteTitle')}</TooltipContent>
                         </Tooltip>
                       </div>
                     </TableCell>

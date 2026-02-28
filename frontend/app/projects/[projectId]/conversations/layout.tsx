@@ -7,6 +7,7 @@ import { useProject } from "@/features/projects/hooks";
 import Link from "next/link";
 import { ChevronRight, FolderOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslations } from "next-intl";
 
 export default function ConversationsLayout({
   children,
@@ -16,6 +17,7 @@ export default function ConversationsLayout({
   const params = useParams();
   const projectId = Number(params.projectId);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
+  const tp = useTranslations("projects");
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -27,7 +29,7 @@ export default function ConversationsLayout({
           href="/projects"
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
-          Dự án
+          {tp("title")}
         </Link>
         <ChevronRight className="size-3.5 text-muted-foreground/60" />
         {projectLoading ? (
@@ -35,7 +37,7 @@ export default function ConversationsLayout({
         ) : (
           <div className="flex items-center gap-1.5 font-medium truncate">
             <FolderOpen className="size-3.5 text-primary" />
-            <span className="truncate">{project?.name ?? `Dự án #${projectId}`}</span>
+            <span className="truncate">{project?.name ?? `${tp("title")} #${projectId}`}</span>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,8 @@ export function ConversationDialog({
   conversation,
   onSuccess,
 }: ConversationDialogProps) {
+  const t = useTranslations('conversations');
+  const tc = useTranslations('common');
   const isEditing = !!conversation;
 
   const {
@@ -93,20 +96,18 @@ export function ConversationDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Chỉnh sửa cuộc hội thoại" : "Tạo cuộc hội thoại mới"}
+            {isEditing ? t('editTitle') : t('createTitle')}
           </DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? "Cập nhật tiêu đề cuộc hội thoại."
-              : "Nhập tiêu đề để tạo cuộc hội thoại mới."}
+            {isEditing ? t('editDescription') : t('createDescription')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Field>
-            <FieldLabel htmlFor="conversation-title">Tiêu đề</FieldLabel>
+            <FieldLabel htmlFor="conversation-title">{t('conversationTitle')}</FieldLabel>
             <Input
               id="conversation-title"
-              placeholder="Nhập tiêu đề cuộc hội thoại..."
+              placeholder={t('titlePlaceholder')}
               {...register("title")}
               aria-invalid={!!errors.title}
             />
@@ -123,16 +124,16 @@ export function ConversationDialog({
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Hủy
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading
                 ? isEditing
-                  ? "Đang cập nhật..."
-                  : "Đang tạo..."
+                  ? tc('updating')
+                  : tc('creating')
                 : isEditing
-                  ? "Cập nhật"
-                  : "Tạo"}
+                  ? tc('update')
+                  : tc('create')}
             </Button>
           </DialogFooter>
         </form>

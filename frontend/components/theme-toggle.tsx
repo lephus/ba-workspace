@@ -2,6 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import {
 
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme();
+  const t = useTranslations('common.theme');
 
   return (
     <DropdownMenu>
@@ -30,30 +32,30 @@ export function ThemeToggle() {
             >
               <Sun className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Chuyển giao diện</span>
+              <span className="sr-only">{t('toggle')}</span>
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
-        <TooltipContent side="left">Chuyển giao diện</TooltipContent>
+        <TooltipContent side="left">{t('toggle')}</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end" side="top">
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="size-4" />
-          Sáng
+          {t('light')}
           {theme === "light" && (
             <span className="ml-auto text-xs text-muted-foreground">✓</span>
           )}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="size-4" />
-          Tối
+          {t('dark')}
           {theme === "dark" && (
             <span className="ml-auto text-xs text-muted-foreground">✓</span>
           )}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="size-4" />
-          Hệ thống
+          {t('system')}
           {theme === "system" && (
             <span className="ml-auto text-xs text-muted-foreground">✓</span>
           )}

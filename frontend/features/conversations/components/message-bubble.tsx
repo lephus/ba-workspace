@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -37,6 +38,8 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
   }
 
   const [copied, setCopied] = useState(false);
+  const tc = useTranslations('common');
+  const t = useTranslations('conversations.chat');
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -161,7 +164,7 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              {copied ? "Đã sao chép" : "Sao chép"}
+              {copied ? tc('copied') : tc('copy')}
             </TooltipContent>
           </Tooltip>
           {isPinned ? (
@@ -175,9 +178,12 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
                     onClick={() => onUnpin(message.id)}
                   >
                     <PinOff className="size-3 text-amber-500" />
+                    <span className="sr-only">
+                      {t('unpin')}
+                    </span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Bỏ ghim</TooltipContent>
+                <TooltipContent side="bottom">{t('unpin')}</TooltipContent>
               </Tooltip>
             )
           ) : (
@@ -191,9 +197,12 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
                     onClick={() => onPin(message.id)}
                   >
                     <Pin className="size-3 text-muted-foreground" />
+                    <span className="sr-only">
+                      {tc('pin')}
+                    </span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Ghim</TooltipContent>
+                <TooltipContent side="bottom">{tc('pin')}</TooltipContent>
               </Tooltip>
             )
           )}
