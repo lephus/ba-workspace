@@ -1,11 +1,26 @@
-node_modules/
-.env
-.env.local
-*.log
-.DS_Store
+# Data and config
 data/
 _config/config.yaml
-backend/__pycache__/
-backend/**/__pycache__/
+.env
+.env.local
+
+# Node.js
+node_modules/
 frontend/node_modules/
 frontend/.next/
+package-lock.json
+frontend/package-lock.json
+.yarn/
+.pnp.*
+
+# Python
+backend/__pycache__/
+backend/**/__pycache__/
+backend/venv/
+.venv/
+ipynb_checkpoints/
+*.py[cod]
+
+# System
+.DS_Store
+*.log

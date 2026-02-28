@@ -5,6 +5,7 @@ Reads conversation-agents.yaml and uses the LLM to select one or more agents.
 import json
 import re
 from pathlib import Path
+from typing import Optional
 
 from app.services.gemini_client import generate_text
 
@@ -76,7 +77,7 @@ def route_to_agents(user_message: str) -> list[str]:
         return [agents[0]["id"]]
 
 
-def get_agent_info_from_config(agent_id: str) -> dict | None:
+def get_agent_info_from_config(agent_id: str) -> Optional[dict]:
     """Return { name, avatar, role } for an agent id from conversation-agents config."""
     for a in load_agents_config():
         if a.get("id") == agent_id:

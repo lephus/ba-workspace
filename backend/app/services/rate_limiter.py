@@ -12,6 +12,7 @@ Based on Google's rate-limit model:
 import threading
 import time
 from datetime import datetime, timezone, timedelta
+from typing import Optional, Union
 
 _lock = threading.Lock()
 
@@ -45,13 +46,13 @@ _timestamps: list[float] = []
 _daily: dict = {"date": "", "count": 0}
 
 # Last time we got a 429
-_last_429: float | None = None
+_last_429: Optional[float] = None
 
 # Recent API error info: {"type": "quota"|"auth"|"other", "message": str, "ts": float}
-_last_error: dict | None = None
+_last_error: Optional[dict] = None
 
 # Cached key validation: {"valid": bool, "error": str|None, "ts": float}
-_key_check: dict | None = None
+_key_check: Optional[dict] = None
 KEY_CHECK_TTL = 120  # seconds
 
 def _today_pt() -> str:
@@ -96,7 +97,7 @@ def record_error(error_type: str, message: str) -> None:
         _last_error = {"type": error_type, "message": message, "ts": time.time()}
 
 
-def get_recent_error(max_age: int = 300) -> dict | None:
+def get_recent_error(max_age: int = 300) -> Optional[dict]:
     """Return the last error if it happened within max_age seconds, else None."""
     with _lock:
         if _last_error is None:
@@ -111,14 +112,14 @@ def get_recent_error(max_age: int = 300) -> dict | None:
         }
 
 
-def set_key_check(valid: bool, error: str | None = None) -> None:
+def set_key_check(valid: bool, error: Optional[str] = None) -> None:
     """Cache a key validation result."""
     global _key_check
     with _lock:
         _key_check = {"valid": valid, "error": error, "ts": time.time()}
 
 
-def get_key_check() -> dict | None:
+def get_key_check() -> Optional[dict]:
     """Return cached key check if still fresh, else None."""
     with _lock:
         if _key_check is None:
