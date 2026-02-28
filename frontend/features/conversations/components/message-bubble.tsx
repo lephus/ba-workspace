@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Bot, User, Copy, Check, Pin, PinOff, FileText, Paperclip } from "lucide-react";
+import { Bot, User, Copy, Check, Pin, PinOff, FileText, Paperclip, Download } from "lucide-react";
 import type { Message } from "@/features/messages/types";
 
 interface MessageBubbleProps {
@@ -133,6 +133,26 @@ export function MessageBubble({ message, isPinned, onPin, onUnpin }: MessageBubb
                 {message.content}
               </ReactMarkdown>
             </div>
+          )}
+          {message.export_file && (
+            <a
+              href={message.export_file.download_url}
+              download={message.export_file.filename}
+              className="mt-2 flex items-center gap-3 rounded-lg border bg-background p-3 transition-colors hover:bg-accent group/export"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <FileText className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">
+                  {message.export_file.filename}
+                </p>
+                <p className="text-xs text-muted-foreground uppercase">
+                  {message.export_file.format}
+                </p>
+              </div>
+              <Download className="size-4 text-muted-foreground group-hover/export:text-primary transition-colors shrink-0" />
+            </a>
           )}
         </div>
 

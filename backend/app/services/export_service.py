@@ -149,10 +149,14 @@ def save_export_to_project(project_id: int, markdown: str, fmt: str) -> str:
     return filename
 
 
+TEMPLATE_PREFIXES = ("brd_", "frd_", "backlog_", "charter_")
+
+
 def is_export_filename_safe(filename: str) -> bool:
-    """Allow only export_*.docx|.xlsx|.md to prevent path traversal and arbitrary file access."""
+    """Allow export_* and template-based filenames (brd_*, frd_*, etc.)."""
     if not filename or ".." in filename or "/" in filename or "\\" in filename:
         return False
-    if not filename.startswith("export_"):
+    allowed_prefixes = ("export_",) + TEMPLATE_PREFIXES
+    if not any(filename.startswith(p) for p in allowed_prefixes):
         return False
     return any(filename.endswith("." + e) for e in EXPORT_EXT.values())

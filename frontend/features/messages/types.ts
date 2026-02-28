@@ -6,6 +6,12 @@ export interface MessageAttachment {
   filename: string;
 }
 
+export interface ExportFile {
+  format: string;
+  download_url: string;
+  filename: string;
+}
+
 export interface Message {
   id: number;
   conversation_id: number;
@@ -15,6 +21,7 @@ export interface Message {
   agent_id?: string | null;
   bot?: Bot;
   attachments?: MessageAttachment[];
+  export_file?: ExportFile;
 }
 
 export interface Bot {
