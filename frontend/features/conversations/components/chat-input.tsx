@@ -11,6 +11,7 @@ import {
 import {
   Check,
   FileText,
+  Loader2,
   Paperclip,
   SendHorizontal,
   X,
@@ -98,6 +99,11 @@ interface ExistingDocumentItem {
   filename: string;
 }
 
+interface UploadingFile {
+  file: File;
+  tempId: string;
+}
+
 interface ChatInputProps {
   onSend: (content: string, attachments: MessageAttachment[]) => void;
   onAttach?: (files: File[]) => Promise<number[]>;
@@ -117,9 +123,15 @@ export function ChatInput({
   const [selectedExistingIds, setSelectedExistingIds] = useState<number[]>([]);
   const [selectedNewFiles, setSelectedNewFiles] = useState<File[]>([]);
   const [mentionedAgents, setMentionedAgents] = useState<string[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const pendingUploadsRef = useRef<
+    { promise: Promise<number[]>; files: File[] }[]
+  >([]);
+  const uploadedFileNamesRef = useRef<Map<number, string>>(new Map());
+  const isSendingRef = useRef(false);
 
   /* ---- Message history (Arrow Up/Down like ChatGPT) ---- */
   const messageHistoryRef = useRef<string[]>([]);
@@ -334,38 +346,65 @@ export function ChatInput({
     if (mentionOpen) setMentionOpen(false);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = value.trim();
-    if (!trimmed || isLoading || disabled) return;
+    if (!trimmed || isLoading || disabled || isSendingRef.current) return;
 
-    const attachments: MessageAttachment[] = [
-      ...selectedExistingIds.map((id) => {
-        const doc = existingDocuments.find((d) => d.id === id);
-        return {
-          type: "document" as const,
-          id,
-          filename: doc?.filename ?? String(id),
-        };
-      }),
-      ...selectedNewFiles.map((file) => ({
-        type: "file" as const,
-        filename: file.name,
-      })),
-    ];
+    isSendingRef.current = true;
 
-    // Save to message history
-    messageHistoryRef.current.push(trimmed);
-    setHistoryIndex(-1);
-    draftRef.current = "";
+    try {
+      messageHistoryRef.current.push(trimmed);
+      setHistoryIndex(-1);
+      draftRef.current = "";
 
-    onSend(trimmed, attachments);
-    setValue("");
-    setSelectedExistingIds([]);
-    setSelectedNewFiles([]);
-    setMentionedAgents([]);
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+      const currentSelectedExistingIds = [...selectedExistingIds];
+      const currentSelectedNewFiles = [...selectedNewFiles];
+
+      let extraIds: number[] = [];
+      if (pendingUploadsRef.current.length > 0) {
+        const results = await Promise.allSettled(
+          pendingUploadsRef.current.map((e) => e.promise),
+        );
+        extraIds = results
+          .filter(
+            (r): r is PromiseFulfilledResult<number[]> =>
+              r.status === "fulfilled",
+          )
+          .flatMap((r) => r.value);
+      }
+
+      const allExistingIds = Array.from(
+        new Set([...currentSelectedExistingIds, ...extraIds]),
+      );
+
+      const attachments: MessageAttachment[] = [
+        ...allExistingIds.map((id) => {
+          const doc = existingDocuments.find((d) => d.id === id);
+          return {
+            type: "document" as const,
+            id,
+            filename:
+              doc?.filename ??
+              uploadedFileNamesRef.current.get(id) ??
+              String(id),
+          };
+        }),
+        ...currentSelectedNewFiles.map((file) => ({
+          type: "file" as const,
+          filename: file.name,
+        })),
+      ];
+
+      onSend(trimmed, attachments);
+      setValue("");
+      setSelectedExistingIds([]);
+      setSelectedNewFiles([]);
+      setMentionedAgents([]);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+    } finally {
+      isSendingRef.current = false;
     }
   };
 
@@ -541,16 +580,40 @@ export function ChatInput({
 
     if (validFiles.length > 0) {
       if (onAttach) {
-        // Upload files to backend and auto-select successful uploads
-        const uploadedIds = await onAttach(validFiles);
-        if (uploadedIds.length > 0) {
-          setSelectedExistingIds((prev) => [
-            ...prev,
-            ...uploadedIds.filter((id) => !prev.includes(id)),
-          ]);
+        const tempFiles = validFiles.map((file) => ({
+          file,
+          tempId: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+        }));
+        setUploadingFiles((prev) => [...prev, ...tempFiles]);
+
+        const uploadPromise = onAttach(validFiles);
+        const entry = { promise: uploadPromise, files: validFiles };
+        pendingUploadsRef.current.push(entry);
+
+        try {
+          const uploadedIds = await uploadPromise;
+          uploadedIds.forEach((id, idx) => {
+            if (validFiles[idx]) {
+              uploadedFileNamesRef.current.set(id, validFiles[idx].name);
+            }
+          });
+          if (uploadedIds.length > 0) {
+            setSelectedExistingIds((prev) => [
+              ...prev,
+              ...uploadedIds.filter((id) => !prev.includes(id)),
+            ]);
+          }
+        } finally {
+          pendingUploadsRef.current = pendingUploadsRef.current.filter(
+            (e) => e !== entry,
+          );
+          setUploadingFiles((prev) =>
+            prev.filter(
+              (uf) => !tempFiles.some((tf) => tf.tempId === uf.tempId),
+            ),
+          );
         }
       } else {
-        // Fallback: just track files locally
         setSelectedNewFiles((prev) => [...prev, ...validFiles]);
       }
     }
@@ -693,6 +756,20 @@ export function ChatInput({
                 <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                   Chọn file đã upload
                 </p>
+                {uploadingFiles.map((uf) => (
+                  <div
+                    key={uf.tempId}
+                    className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm opacity-60"
+                  >
+                    <Loader2 className="size-4 shrink-0 text-primary animate-spin" />
+                    <span className="min-w-0 flex-1 truncate text-left">
+                      {uf.file.name}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      Đang tải…
+                    </span>
+                  </div>
+                ))}
                 {existingDocuments.map((doc, i) => {
                   const isSelected = selectedExistingIds.includes(doc.id);
                   return (
@@ -728,9 +805,10 @@ export function ChatInput({
             )}
 
           <div className="grid grid-cols-[auto_1fr_auto] items-end gap-2 rounded-[28px] border bg-background p-2.5 transition-colors duration-200 ease-in-out">
-            {/* ---- Chip row: documents + files + mentioned agents ---- */}
+            {/* ---- Chip row: documents + files + uploading + mentioned agents ---- */}
             {(selectedExistingDocuments.length > 0 ||
               selectedNewFiles.length > 0 ||
+              uploadingFiles.length > 0 ||
               mentionedAgentItems.length > 0) && (
               <div className="col-span-3 flex flex-wrap gap-1 px-1 pb-1">
                 {selectedExistingDocuments.map((document) => (
@@ -767,6 +845,17 @@ export function ChatInput({
                     >
                       <X className="size-3.5 text-muted-foreground" />
                     </button>
+                  </div>
+                ))}
+                {uploadingFiles.map((uf) => (
+                  <div
+                    key={uf.tempId}
+                    className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-xs"
+                  >
+                    <Loader2 className="size-3.5 shrink-0 text-primary animate-spin" />
+                    <span className="max-w-40 truncate text-muted-foreground">
+                      {uf.file.name}
+                    </span>
                   </div>
                 ))}
                 {mentionedAgentItems.map((agent) => (
@@ -813,6 +902,24 @@ export function ChatInput({
                 <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
                   File đã upload
                 </DropdownMenuLabel>
+                {uploadingFiles.length > 0 && (
+                  <div className="px-1 pb-1">
+                    {uploadingFiles.map((uf) => (
+                      <div
+                        key={uf.tempId}
+                        className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm opacity-60"
+                      >
+                        <Loader2 className="size-4 shrink-0 text-primary animate-spin" />
+                        <span className="min-w-0 flex-1 truncate">
+                          {uf.file.name}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                          Đang tải…
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {existingDocuments.length > 0 ? (
                   <div className="max-h-44 overflow-y-auto">
                     {existingDocuments.map((document) => (
