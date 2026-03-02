@@ -10,7 +10,7 @@ drop empty ones, and join with double newline so the prompt has clear structure 
 """
 
 # Maximum number of parts to avoid abuse
-MAX_PARTS = 50
+MAX_PARTS = 1_000
 # Maximum total length after normalization (chars)
 MAX_NORMALIZED_LENGTH = 50_000
 

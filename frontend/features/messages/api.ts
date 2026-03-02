@@ -63,9 +63,9 @@ export async function sendMessageApi(
     if (response.status === 500) {
       throw new Error("Agent xử lý thất bại. Vui lòng thử lại.");
     }
-    throw new Error("Không thể gửi tin nhắn");
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error || "Không thể gửi tin nhắn");
   }
-
   return response.json();
 }
 
