@@ -6,6 +6,8 @@ from app.models import Message
 from app.services.agent_router import (
     get_agent_info_from_config,
     load_agents_config,
+    OUT_OF_SCOPE_ALEX_MESSAGE,
+    refactor_requirement_for_gemini,
     route_to_agents,
 )
 from app.services.gemini_client import generate_chat
@@ -97,9 +99,13 @@ def get_conversation_bot(primary_agent_id: str | None = None) -> dict:
 def get_agent_reply(conversation_id: int, new_user_content: str) -> tuple[str, list[str]]:
     """
     Infer which agent(s) to use, build combined prompt when multiple agents, then reply.
+    First runs intelligent requirement analyzer to refactor user input; routing and
+    reply use the refactored requirement so Gemini understands correctly.
     Returns (reply_text, selected_agent_ids). Caller may use selected_agent_ids[0] for bot.
+    When the request is out of scope, reply_text is prefixed with OUT_OF_SCOPE_ALEX_MESSAGE.
     """
-    selected_ids = route_to_agents(new_user_content)
+    refactored_content = refactor_requirement_for_gemini(new_user_content)
+    selected_ids, out_of_scope = route_to_agents(refactored_content)
     agents_config = load_agents_config()
     selected_agents = [a for a in agents_config if a.get("id") in selected_ids]
     if selected_agents:
@@ -117,5 +123,7 @@ def get_agent_reply(conversation_id: int, new_user_content: str) -> tuple[str, l
         for m in messages
         if m.role in ("user", "assistant")
     ]
-    reply_text = generate_chat(system_prompt, history, new_user_content)
+    reply_text = generate_chat(system_prompt, history, refactored_content)
+    if out_of_scope:
+        reply_text = f"{OUT_OF_SCOPE_ALEX_MESSAGE}\n\n{reply_text}"
     return reply_text, selected_ids
