@@ -110,6 +110,7 @@ interface ChatInputProps {
   existingDocuments?: ExistingDocumentItem[];
   isLoading?: boolean;
   disabled?: boolean;
+  autoFocus?: boolean;
 }
 
 export function ChatInput({
@@ -118,6 +119,7 @@ export function ChatInput({
   existingDocuments = [],
   isLoading,
   disabled,
+  autoFocus = false,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [selectedExistingIds, setSelectedExistingIds] = useState<number[]>([]);
@@ -132,6 +134,13 @@ export function ChatInput({
   >([]);
   const uploadedFileNamesRef = useRef<Map<number, string>>(new Map());
   const isSendingRef = useRef(false);
+
+  /* ---- Auto-focus on mount ---- */
+  useEffect(() => {
+    if (autoFocus) {
+      textareaRef.current?.focus();
+    }
+  }, [autoFocus]);
 
   /* ---- Message history (Arrow Up/Down like ChatGPT) ---- */
   const messageHistoryRef = useRef<string[]>([]);

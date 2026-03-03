@@ -94,6 +94,39 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
   }, [messages]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pendingProcessedRef = useRef(false);
+
+  // Check for a pending message from NewChatArea (auto-created conversation)
+  useEffect(() => {
+    if (pendingProcessedRef.current) return;
+    if (messagesLoading) return;
+
+    const key = `pending-message-${conversationId}`;
+    const pending = sessionStorage.getItem(key);
+    if (!pending) return;
+
+    pendingProcessedRef.current = true;
+    sessionStorage.removeItem(key);
+
+    try {
+      const { content, attachments } = JSON.parse(pending);
+      if (content) {
+        sendMessage.mutate({
+          role: "user",
+          content: {
+            content_type: "text",
+            parts: content
+              .split("\n")
+              .filter((line: string) => line.trim() !== ""),
+          },
+          attachments:
+            attachments && attachments.length > 0 ? attachments : undefined,
+        });
+      }
+    } catch {
+      // Ignore malformed pending message
+    }
+  }, [conversationId, messagesLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom when messages change (new message, optimistic update, server response)
   useEffect(() => {
