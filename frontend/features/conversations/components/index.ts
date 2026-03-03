@@ -3,6 +3,7 @@ export { ConversationDialog } from "./conversation-dialog";
 export { DeleteConversationDialog } from "./delete-conversation-dialog";
 export { ConversationSidebar } from "./conversation-sidebar";
 export { ChatArea } from "./chat-area";
+export { NewChatArea } from "./new-chat-area";
 export { ChatInput } from "./chat-input";
 export { MessageBubble } from "./message-bubble";
 export { AgentPanel } from "./agent-panel";
