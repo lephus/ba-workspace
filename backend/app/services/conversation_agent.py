@@ -1,8 +1,9 @@
 """Conversation agent: BA chat with history; router selects agent(s), multiple agents may collaborate."""
+import logging
 from pathlib import Path
 
 from app.agents.base import get_agent_bot_info
-from app.models import Message
+from app.models import Message, Conversation
 from app.services.agent_router import (
     get_agent_info_from_config,
     load_agents_config,
@@ -11,6 +12,8 @@ from app.services.agent_router import (
     route_to_agents,
 )
 from app.services.gemini_client import generate_chat
+
+logger = logging.getLogger(__name__)
 
 # Fallback when config has no agents or router returns none
 CONVERSATION_AGENT_ID = "alex"
@@ -112,6 +115,20 @@ def get_agent_reply(conversation_id: int, new_user_content: str) -> tuple[str, l
         system_prompt = _build_multi_agent_system_prompt(selected_agents)
     else:
         system_prompt = get_conversation_system_prompt()
+
+    # ── Inject project-wide document context (RAG summaries) ─────────────
+    # All RAG-processed documents in the project are available to every
+    # conversation, so the agent has knowledge of uploaded materials
+    # without needing the user to re-attach them each time.
+    try:
+        conv = Conversation.query.get(conversation_id)
+        if conv:
+            from app.services.document_rag import build_project_documents_context
+            doc_context = build_project_documents_context(conv.project_id)
+            if doc_context:
+                system_prompt = f"{system_prompt}\n\n{doc_context}"
+    except Exception as exc:
+        logger.warning("Failed to inject project docs context: %s", exc)
 
     messages = (
         Message.query.filter_by(conversation_id=conversation_id)
