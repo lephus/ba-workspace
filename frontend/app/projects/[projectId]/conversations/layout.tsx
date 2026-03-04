@@ -7,6 +7,7 @@ import { useProject } from "@/features/projects/hooks";
 import Link from "next/link";
 import { ChevronRight, FolderOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiKeyManager } from "@/features/settings/components";
 
 export default function ConversationsLayout({
   children,
@@ -35,9 +36,14 @@ export default function ConversationsLayout({
         ) : (
           <div className="flex items-center gap-1.5 font-medium truncate">
             <FolderOpen className="size-3.5 text-primary" />
-            <span className="truncate">{project?.name ?? `Dự án #${projectId}`}</span>
+            <span className="truncate">
+              {project?.name ?? `Dự án #${projectId}`}
+            </span>
           </div>
         )}
+        <div className="ml-auto">
+          <ApiKeyManager />
+        </div>
       </div>
 
       {/* Main content */}
@@ -47,9 +53,7 @@ export default function ConversationsLayout({
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <main className="flex-1 flex flex-col min-w-0 h-full">
-          {children}
-        </main>
+        <main className="flex-1 flex flex-col min-w-0 h-full">{children}</main>
       </div>
     </div>
   );
