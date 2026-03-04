@@ -10,5 +10,6 @@ from app.models.message import Message  # noqa: E402
 from app.models.pinned_message import PinnedMessage  # noqa: E402
 from app.models.document import Document  # noqa: E402
 from app.models.analysis import Analysis  # noqa: E402
+from app.models.api_key import ApiKey  # noqa: E402
 
-__all__ = ["db", "Project", "Conversation", "Message", "PinnedMessage", "Document", "Analysis"]
+__all__ = ["db", "Project", "Conversation", "Message", "PinnedMessage", "Document", "Analysis", "ApiKey"]
