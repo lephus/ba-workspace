@@ -179,3 +179,51 @@ def build_document_context_block(document) -> str:
         lines.append(f"User notes (for reference only): {document.notes}")
 
     return "\n".join(lines)
+
+
+def build_project_documents_context(project_id: int) -> str | None:
+    """
+    Build a compact context block from ALL RAG-processed documents in the project.
+    Uses pre-computed summaries/keywords/points so no extra Gemini calls are needed.
+    Returns None if no documents are available.
+    """
+    from app.models.document import Document
+
+    docs = (
+        Document.query
+        .filter_by(project_id=project_id)
+        .filter(Document.rag_processed_at.isnot(None))
+        .order_by(Document.created_at.asc())
+        .all()
+    )
+    if not docs:
+        return None
+
+    blocks = []
+    for doc in docs:
+        block_lines = [f"📄 {doc.filename}"]
+        if doc.summary:
+            block_lines.append(f"   Summary: {doc.summary}")
+        try:
+            kw = json.loads(doc.keywords) if doc.keywords else []
+        except Exception:
+            kw = []
+        if kw:
+            block_lines.append(f"   Keywords: {', '.join(kw)}")
+        try:
+            pts = json.loads(doc.important_points) if doc.important_points else []
+        except Exception:
+            pts = []
+        if pts:
+            for p in pts:
+                block_lines.append(f"   • {p}")
+        if doc.assigned_agent:
+            block_lines.append(f"   Agent: {doc.assigned_agent}")
+        blocks.append("\n".join(block_lines))
+
+    header = (
+        f"[PROJECT DOCUMENTS — {len(docs)} file(s)]\n"
+        "The following documents have been uploaded to this project. "
+        "Use this knowledge to answer user questions across all conversations in the project.\n"
+    )
+    return header + "\n\n".join(blocks)
