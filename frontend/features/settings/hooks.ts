@@ -14,6 +14,7 @@ export function useApiKeys() {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: getApiKeysApi,
+    select: (data) => data,
   });
 }
 

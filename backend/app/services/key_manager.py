@@ -1,12 +1,15 @@
 """
-API Key Manager – manages multiple Gemini API keys with automatic rotation.
+Multi-key manager for Gemini API keys.
 
 Priority:
-1. .env GEMINI_API_KEY (always tried first if present)
-2. UI-added keys from the database (rotated on failure)
+  1. GEMINI_API_KEY from .env (always tried first)
+  2. Active UI keys from the database (ordered by last_used_at ASC → least-recently-used first)
 
-When a key fails (auth error, quota exhausted), the manager marks it
-inactive and rotates to the next available key automatically.
+Provides:
+  - get_current_api_key()   → best available key string
+  - rotate_key(failed, msg) → mark failed & switch to next (raises ValueError if none left)
+  - mark_key_used(key)      → update last_used_at in DB
+  - get_current_key_info()  → {key_masked, source, id} of the active key (for UI)
 """
 import logging
 import threading
@@ -17,206 +20,177 @@ from flask import current_app
 logger = logging.getLogger(__name__)
 
 _lock = threading.Lock()
-_current_key: str | None = None  # currently active key
+
+# In-memory state: which key is currently "active"
+_current_key: str | None = None
+_failed_keys: set[str] = set()  # keys that failed in the current "round"
 
 
-def _get_env_key() -> str:
-    """Return the API key from .env / Flask config (may be empty)."""
-    return (current_app.config.get("GEMINI_API_KEY") or "").strip()
+def _mask(key: str) -> str:
+    if len(key) > 12:
+        return key[:8] + "..." + key[-4:]
+    return "***"
 
 
-def _get_db_keys(only_active: bool = True) -> list:
-    """Return API key records from the database."""
-    from app.models.api_key import ApiKey
-    q = ApiKey.query
-    if only_active:
-        q = q.filter_by(is_active=True)
-    return q.order_by(ApiKey.created_at.asc()).all()
+def _env_key() -> str | None:
+    """Return the .env GEMINI_API_KEY if set and non-empty."""
+    try:
+        val = current_app.config.get("GEMINI_API_KEY", "").strip()
+        return val or None
+    except RuntimeError:
+        import os
+        val = os.getenv("GEMINI_API_KEY", "").strip()
+        return val or None
 
 
-def get_all_keys() -> list[dict]:
-    """Return all keys (for the management UI), including the .env key."""
-    from app.models.api_key import ApiKey
-    result = []
-    env_key = _get_env_key()
-    if env_key:
-        masked = env_key[:8] + "..." + env_key[-4:] if len(env_key) > 12 else "***"
-        result.append({
-            "id": None,
-            "key_masked": masked,
-            "label": ".env (mặc định)",
-            "is_active": True,
-            "source": "env",
-            "last_error": None,
-            "last_used_at": None,
-            "created_at": None,
-        })
-    db_keys = ApiKey.query.order_by(ApiKey.created_at.asc()).all()
-    for k in db_keys:
-        d = k.to_dict()
-        d["source"] = "ui"
-        result.append(d)
-    return result
+def _db_keys() -> list[dict]:
+    """Return active UI keys from the database, ordered LRU-first."""
+    try:
+        from app.models.api_key import ApiKey
+        rows = (
+            ApiKey.query
+            .filter_by(is_active=True)
+            .order_by(ApiKey.last_used_at.asc().nullsfirst())
+            .all()
+        )
+        return [{"id": r.id, "key": r.key, "label": r.label} for r in rows]
+    except Exception as e:
+        logger.debug("Could not query DB keys: %s", e)
+        return []
+
+
+def _all_candidate_keys() -> list[dict]:
+    """
+    Build ordered list of candidate keys.
+    Returns list of {"key": str, "source": "env"|"ui", "id": int|None, "label": str|None}
+    """
+    candidates = []
+    env = _env_key()
+    if env:
+        candidates.append({"key": env, "source": "env", "id": None, "label": ".env"})
+    for row in _db_keys():
+        candidates.append({"key": row["key"], "source": "ui", "id": row["id"], "label": row.get("label")})
+    return candidates
 
 
 def get_current_api_key() -> str:
     """
-    Return the current best API key to use.
-    - If _current_key is set and valid, use it.
-    - Otherwise, pick the first available key (env first, then DB).
-    Raises ValueError if no key is available.
+    Return the best available API key.
+    Raises ValueError if no valid key is available.
     """
     global _current_key
+
     with _lock:
-        if _current_key:
-            return _current_key
-        key = _pick_next_key()
-        _current_key = key
-        return key
+        candidates = _all_candidate_keys()
+        if not candidates:
+            raise ValueError("Không có API key nào được cấu hình. Thêm key qua UI hoặc file .env")
 
+        # If current key is still valid (not failed), keep using it
+        if _current_key and _current_key not in _failed_keys:
+            # Verify it's still in the candidate list (not deleted/disabled)
+            if any(c["key"] == _current_key for c in candidates):
+                return _current_key
 
-def _pick_next_key(exclude: str | None = None) -> str:
-    """Pick the next available key, excluding the given one."""
-    env_key = _get_env_key()
-    if env_key and env_key != exclude:
-        return env_key
+        # Pick first non-failed candidate
+        for c in candidates:
+            if c["key"] not in _failed_keys:
+                _current_key = c["key"]
+                logger.info("Using key %s (source=%s)", _mask(c["key"]), c["source"])
+                return _current_key
 
-    db_keys = _get_db_keys(only_active=True)
-    for k in db_keys:
-        if k.key != exclude:
-            return k.key
-
-    raise ValueError("Không có API key khả dụng. Vui lòng thêm key Gemini trong cài đặt hoặc .env")
+        # All keys failed — reset failures and try again with first key
+        logger.warning("All %d keys failed, resetting failure state", len(candidates))
+        _failed_keys.clear()
+        _current_key = candidates[0]["key"]
+        return _current_key
 
 
 def rotate_key(failed_key: str, error_msg: str) -> str:
     """
-    Mark the failed key as problematic and rotate to the next one.
-    Returns the new key, raises ValueError if none left.
+    Mark *failed_key* as failed and rotate to the next available key.
+    Also records the error on the DB row (if it's a UI key).
+    Raises ValueError if no more keys are available.
     """
     global _current_key
-    from app.models import db
-    from app.models.api_key import ApiKey
-
-    logger.warning("Rotating away from key %s...%s: %s", failed_key[:8], failed_key[-4:], error_msg)
 
     with _lock:
-        # Mark DB key as inactive if it's a DB key
-        db_key = ApiKey.query.filter_by(key=failed_key).first()
-        if db_key:
-            db_key.is_active = False
-            db_key.last_error = error_msg[:500]
+        _failed_keys.add(failed_key)
+        logger.warning("Marked key %s as failed: %s", _mask(failed_key), error_msg[:120])
+
+        # Record error on DB key
+        _record_db_error(failed_key, error_msg)
+
+        candidates = _all_candidate_keys()
+        for c in candidates:
+            if c["key"] not in _failed_keys:
+                _current_key = c["key"]
+                logger.info("Rotated to key %s (source=%s)", _mask(c["key"]), c["source"])
+                return _current_key
+
+        raise ValueError("Tất cả API key đều bị lỗi. Vui lòng kiểm tra hoặc thêm key mới.")
+
+
+def mark_key_used(key: str) -> None:
+    """Update last_used_at for a DB key after successful use."""
+    try:
+        from app.models.api_key import ApiKey
+        from app.models import db
+        row = ApiKey.query.filter_by(key=key).first()
+        if row:
+            row.last_used_at = datetime.utcnow()
+            row.last_error = None  # clear previous error on success
             db.session.commit()
-
-        try:
-            new_key = _pick_next_key(exclude=failed_key)
-        except ValueError:
-            _current_key = None
-            raise
-
-        _current_key = new_key
-        return new_key
+    except Exception as e:
+        logger.debug("mark_key_used failed: %s", e)
 
 
-def mark_key_used(key: str):
-    """Update last_used_at for a DB key."""
-    from app.models import db
-    from app.models.api_key import ApiKey
-
-    db_key = ApiKey.query.filter_by(key=key).first()
-    if db_key:
-        db_key.last_used_at = datetime.utcnow()
-        db.session.commit()
-
-
-def add_key(key: str, label: str | None = None) -> dict:
-    """Add a new API key from the UI."""
-    from app.models import db
-    from app.models.api_key import ApiKey
-
-    key = key.strip()
-    if not key:
-        raise ValueError("API key không được để trống")
-
-    existing = ApiKey.query.filter_by(key=key).first()
-    if existing:
-        if not existing.is_active:
-            existing.is_active = True
-            existing.last_error = None
-            existing.label = label or existing.label
-            db.session.commit()
-            return existing.to_dict()
-        raise ValueError("API key này đã tồn tại")
-
-    api_key = ApiKey(key=key, label=label, is_active=True)
-    db.session.add(api_key)
-    db.session.commit()
-    d = api_key.to_dict()
-    d["source"] = "ui"
-    return d
-
-
-def remove_key(key_id: int) -> bool:
-    """Remove an API key by id."""
-    global _current_key
-    from app.models import db
-    from app.models.api_key import ApiKey
-
-    api_key = ApiKey.query.get(key_id)
-    if not api_key:
-        return False
-
+def get_current_key_info() -> dict | None:
+    """
+    Return info about the currently active key for display in the UI.
+    Returns {"key_masked": str, "source": "env"|"ui", "id": int|None, "label": str|None}
+    or None if no key is configured.
+    """
     with _lock:
-        if _current_key == api_key.key:
-            _current_key = None
+        candidates = _all_candidate_keys()
+        if not candidates:
+            return None
 
-    db.session.delete(api_key)
-    db.session.commit()
-    return True
+        active = _current_key
+        for c in candidates:
+            if c["key"] == active:
+                return {
+                    "key_masked": _mask(c["key"]),
+                    "source": c["source"],
+                    "id": c["id"],
+                    "label": c["label"],
+                }
 
-
-def toggle_key(key_id: int, active: bool) -> dict | None:
-    """Enable/disable an API key."""
-    global _current_key
-    from app.models import db
-    from app.models.api_key import ApiKey
-
-    api_key = ApiKey.query.get(key_id)
-    if not api_key:
-        return None
-
-    api_key.is_active = active
-    if active:
-        api_key.last_error = None
-    else:
-        with _lock:
-            if _current_key == api_key.key:
-                _current_key = None
-    db.session.commit()
-    d = api_key.to_dict()
-    d["source"] = "ui"
-    return d
+        # current_key not found in candidates (deleted?), return first
+        c = candidates[0]
+        return {
+            "key_masked": _mask(c["key"]),
+            "source": c["source"],
+            "id": c["id"],
+            "label": c["label"],
+        }
 
 
-def reset_current():
-    """Force re-selection on next call (used after key changes)."""
+def reset_failures() -> None:
+    """Clear all failure state (useful after adding a new key)."""
     global _current_key
     with _lock:
+        _failed_keys.clear()
         _current_key = None
 
 
-def validate_key_quick(key: str) -> dict:
-    """Quick validation of a specific key by calling list_models."""
+def _record_db_error(key: str, error_msg: str) -> None:
+    """Record an error message on the DB key row (must be called with _lock held)."""
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=key)
-        list(genai.list_models())
-        return {"valid": True, "error": None}
+        from app.models.api_key import ApiKey
+        from app.models import db
+        row = ApiKey.query.filter_by(key=key).first()
+        if row:
+            row.last_error = error_msg[:500]
+            db.session.commit()
     except Exception as e:
-        err_str = str(e).lower()
-        if any(kw in err_str for kw in ("401", "403", "invalid api key", "api_key_invalid",
-                                         "permission_denied", "api key not valid")):
-            return {"valid": False, "error": "API key không hợp lệ"}
-        if "429" in err_str or "quota" in err_str:
-            return {"valid": True, "error": "Key hợp lệ nhưng đã hết quota"}
-        return {"valid": False, "error": f"Lỗi kiểm tra: {str(e)[:100]}"}
+        logger.debug("_record_db_error failed: %s", e)

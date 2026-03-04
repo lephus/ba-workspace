@@ -1,6 +1,7 @@
 import { APP_CONFIG } from "@/config/app";
 import type {
   Message,
+  MessagePage,
   SendMessageInput,
   SendMessageResponse,
   PinnedMessage,
@@ -12,9 +13,15 @@ const API_URL = APP_CONFIG.API_URL;
 export async function getMessagesApi(
   projectId: number,
   conversationId: number,
-): Promise<Message[]> {
+  params?: { before?: number; limit?: number },
+): Promise<MessagePage> {
+  const searchParams = new URLSearchParams();
+  if (params?.before) searchParams.set("before", String(params.before));
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+  const qs = searchParams.toString();
+
   const response = await fetch(
-    `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages`,
+    `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages${qs ? `?${qs}` : ""}`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },

@@ -1,14 +1,13 @@
-// API Key types
-
 export interface ApiKey {
   id: number | null;
   key_masked: string;
   label: string | null;
   is_active: boolean;
-  source: "env" | "ui";
   last_error: string | null;
   last_used_at: string | null;
   created_at: string | null;
+  source: "env" | "ui";
+  is_current: boolean;
 }
 
 export interface AddApiKeyInput {
@@ -17,7 +16,7 @@ export interface AddApiKeyInput {
   validate?: boolean;
 }
 
-export interface ValidateKeyResult {
+export interface ValidateApiKeyResult {
   valid: boolean;
   error: string | null;
 }
