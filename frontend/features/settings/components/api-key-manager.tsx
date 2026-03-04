@@ -254,7 +254,11 @@ function ApiKeyRow({
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
-        apiKey.is_active ? "bg-background" : "bg-muted/30 opacity-60"
+        apiKey.is_current
+          ? "bg-primary/5 border-primary/30 ring-1 ring-primary/20"
+          : apiKey.is_active
+            ? "bg-background"
+            : "bg-muted/30 opacity-60"
       }`}
     >
       {/* Status icon */}
@@ -276,6 +280,11 @@ function ApiKeyRow({
           <code className="text-xs font-mono truncate">
             {apiKey.key_masked}
           </code>
+          {apiKey.is_current && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-primary/15 text-primary border-primary/30">
+              Đang dùng
+            </Badge>
+          )}
           {apiKey.source === "env" && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
               .env
@@ -288,7 +297,7 @@ function ApiKeyRow({
           )}
         </div>
         {apiKey.last_error && (
-          <p className="text-[11px] text-destructive mt-0.5 truncate">
+          <p className="text-[11px] text-destructive mt-0.5 line-clamp-2 break-all">
             {apiKey.last_error}
           </p>
         )}

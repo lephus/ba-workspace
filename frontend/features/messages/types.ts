@@ -59,3 +59,9 @@ export interface PinnedMessage {
   message_preview: string;
   pinned_at: string;
 }
+
+export interface MessagePage {
+  messages: Message[];
+  has_more: boolean;
+  next_cursor: number | null;
+}

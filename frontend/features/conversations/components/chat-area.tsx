@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { MessageSquare, Pin, ChevronDown, ChevronUp, X } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import {
+  MessageSquare,
+  Pin,
+  ChevronDown,
+  ChevronUp,
+  X,
+  ArrowDown,
+  Loader2,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,10 +68,13 @@ function ChatSkeleton() {
 
 export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
   const {
-    data: messages,
+    data,
     isLoading: messagesLoading,
     isError,
     error,
+    hasPreviousPage,
+    isFetchingPreviousPage,
+    fetchPreviousPage,
   } = useMessages(projectId, conversationId);
 
   const { data: conversation } = useConversation(projectId, conversationId);
@@ -77,6 +87,13 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
   const unpinMessage = useUnpinMessage(projectId, conversationId);
 
   const [pinnedPanelOpen, setPinnedPanelOpen] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
+  // Flatten infinite pages into a single messages array
+  const messages = useMemo(
+    () => data?.pages.flatMap((p) => p.messages) ?? [],
+    [data],
+  );
 
   const pinnedMessageIds = useMemo(
     () => new Set(pinnedMessages?.map((p) => p.message_id) ?? []),
@@ -85,7 +102,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
 
   // Collect unique agent IDs from assistant messages
   const activeAgentIds = useMemo(() => {
-    if (!messages) return [];
+    if (!messages || messages.length === 0) return [];
     const ids = new Set<string>();
     messages.forEach((m) => {
       if (m.agent_id) ids.add(m.agent_id);
@@ -93,8 +110,64 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
     return Array.from(ids);
   }, [messages]);
 
+  // Refs for scroll management
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const initialScrollDoneRef = useRef(false);
+  const prevScrollHeightRef = useRef(0);
+  const prevPageCountRef = useRef(0);
+  const scrollRafRef = useRef(0);
   const pendingProcessedRef = useRef(false);
+
+  // Reset on conversation change
+  useEffect(() => {
+    initialScrollDoneRef.current = false;
+    prevPageCountRef.current = 0;
+    prevScrollHeightRef.current = 0;
+    isNearBottomRef.current = true;
+    setShowScrollBottom(false);
+  }, [conversationId]);
+
+  // Initial scroll to bottom (instant, no animation)
+  useEffect(() => {
+    if (
+      !messagesLoading &&
+      messages.length > 0 &&
+      !initialScrollDoneRef.current
+    ) {
+      initialScrollDoneRef.current = true;
+      requestAnimationFrame(() => {
+        const container = scrollContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      });
+    }
+  }, [messagesLoading, messages.length]);
+
+  // Preserve scroll position after older messages are prepended
+  useEffect(() => {
+    const pageCount = data?.pages.length ?? 0;
+    if (pageCount > prevPageCountRef.current && prevPageCountRef.current > 0) {
+      const container = scrollContainerRef.current;
+      if (container && prevScrollHeightRef.current > 0) {
+        container.scrollTop +=
+          container.scrollHeight - prevScrollHeightRef.current;
+        prevScrollHeightRef.current = 0;
+      }
+    }
+    prevPageCountRef.current = pageCount;
+  }, [data?.pages.length]);
+
+  // Auto-scroll to bottom on new messages (when user is near bottom)
+  useEffect(() => {
+    if (isNearBottomRef.current && initialScrollDoneRef.current) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+    }
+  }, [messages.length]);
 
   // Check for a pending message from NewChatArea (auto-created conversation)
   useEffect(() => {
@@ -128,51 +201,87 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
     }
   }, [conversationId, messagesLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to bottom when messages change (new message, optimistic update, server response)
-  useEffect(() => {
-    // Small delay to ensure DOM is painted before scrolling
-    const timer = setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [messages, sendMessage.isPending]);
+  // Scroll handler with rAF throttle
+  const handleScroll = useCallback(() => {
+    if (scrollRafRef.current) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = 0;
+      const container = scrollContainerRef.current;
+      if (!container) return;
 
-  const handleSend = (content: string, attachments: MessageAttachment[]) => {
-    sendMessage.mutate({
-      role: "user",
-      content: {
-        content_type: "text",
-        parts: content.split("\n").filter((line) => line.trim() !== ""),
-      },
-      attachments: attachments.length > 0 ? attachments : undefined,
-    });
-  };
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      isNearBottomRef.current = nearBottom;
+      setShowScrollBottom(!nearBottom);
 
-  const handlePin = (messageId: number) => {
-    pinMessage.mutate(messageId);
-  };
-
-  const handleAttach = async (files: File[]): Promise<number[]> => {
-    const uploadedIds: number[] = [];
-    for (const file of files) {
-      try {
-        const doc = await uploadDocument.mutateAsync({
-          file,
-          conversation_id: conversationId,
-        });
-        uploadedIds.push(doc.id);
-      } catch {
-        // Error toast already shown by mutation's onError callback
+      // Auto-load older messages when near top
+      if (scrollTop < 150 && hasPreviousPage && !isFetchingPreviousPage) {
+        prevScrollHeightRef.current = container.scrollHeight;
+        fetchPreviousPage();
       }
-    }
-    return uploadedIds;
-  };
+    });
+  }, [hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage]);
 
-  const handleUnpin = (messageId: number) => {
-    unpinMessage.mutate(messageId);
-  };
+  // Cleanup rAF on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+    };
+  }, []);
 
-  const scrollToMessage = (messageId: number) => {
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const handleSend = useCallback(
+    (content: string, attachments: MessageAttachment[]) => {
+      isNearBottomRef.current = true;
+      sendMessage.mutate({
+        role: "user",
+        content: {
+          content_type: "text",
+          parts: content.split("\n").filter((line) => line.trim() !== ""),
+        },
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
+    },
+    [sendMessage],
+  );
+
+  const handlePin = useCallback(
+    (messageId: number) => {
+      pinMessage.mutate(messageId);
+    },
+    [pinMessage],
+  );
+
+  const handleAttach = useCallback(
+    async (files: File[]): Promise<number[]> => {
+      const uploadedIds: number[] = [];
+      for (const file of files) {
+        try {
+          const doc = await uploadDocument.mutateAsync({
+            file,
+            conversation_id: conversationId,
+          });
+          uploadedIds.push(doc.id);
+        } catch {
+          // Error toast already shown by mutation's onError callback
+        }
+      }
+      return uploadedIds;
+    },
+    [uploadDocument, conversationId],
+  );
+
+  const handleUnpin = useCallback(
+    (messageId: number) => {
+      unpinMessage.mutate(messageId);
+    },
+    [unpinMessage],
+  );
+
+  const scrollToMessage = useCallback((messageId: number) => {
     const el = document.getElementById(`message-${messageId}`);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -182,10 +291,10 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
       }, 2000);
     }
     setPinnedPanelOpen(false);
-  };
+  }, []);
 
   return (
-    <div className="flex flex-col h-full min-w-0">
+    <div className="flex flex-col h-full min-w-0 relative">
       {/* Chat header */}
       <div className="shrink-0 border-b">
         <div className="flex items-center gap-3 px-6 py-3">
@@ -259,7 +368,11 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
 
       {/* Messages area */}
       {messages && messages.length > 0 && <ChatToc messages={messages} />}
-      <ScrollArea className="flex-1 min-h-0">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         <div className="mx-auto max-w-3xl">
           {messagesLoading ? (
             <ChatSkeleton />
@@ -281,6 +394,20 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
             </div>
           ) : (
             <div className="px-4 py-2">
+              {/* Loading older messages indicator */}
+              {isFetchingPreviousPage && (
+                <div className="flex justify-center py-3">
+                  <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {/* End of conversation indicator */}
+              {!hasPreviousPage && messages.length > 0 && (
+                <div className="flex justify-center py-3">
+                  <p className="text-xs text-muted-foreground">
+                    Đầu cuộc hội thoại
+                  </p>
+                </div>
+              )}
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -312,7 +439,21 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
+
+      {/* Scroll to bottom button */}
+      {showScrollBottom && (
+        <div className="absolute bottom-28 right-6 z-20">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-9 rounded-full shadow-lg"
+            onClick={scrollToBottom}
+          >
+            <ArrowDown className="size-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Chat input */}
       <ChatInput

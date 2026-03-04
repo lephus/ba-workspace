@@ -58,7 +58,7 @@ def get_model():
     global _gen_model
     _ensure_configured()
     if _gen_model is None:
-        _gen_model = _genai.GenerativeModel("gemini-2.0-flash-lite")
+        _gen_model = _genai.GenerativeModel("gemini-2.5-flash")
     return _gen_model
 
 

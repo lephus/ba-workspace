@@ -54,8 +54,31 @@ def list_messages(project_id, conversation_id):
     conv = Conversation.query.filter_by(
         id=conversation_id, project_id=project_id
     ).first_or_404()
-    msgs = Message.query.filter_by(conversation_id=conv.id).order_by(Message.created_at.asc()).all()
-    return jsonify([_message_with_bot(m) for m in msgs])
+
+    limit = request.args.get("limit", 20, type=int)
+    before = request.args.get("before", None, type=int)
+
+    query = Message.query.filter_by(conversation_id=conv.id)
+    if before:
+        query = query.filter(Message.id < before)
+
+    # Fetch limit+1 to check if there are more older messages
+    query = query.order_by(Message.id.desc()).limit(limit + 1)
+    msgs = query.all()
+
+    has_more = len(msgs) > limit
+    if has_more:
+        msgs = msgs[:limit]
+
+    msgs.reverse()  # Back to chronological order
+
+    next_cursor = msgs[0].id if has_more and msgs else None
+
+    return jsonify({
+        "messages": [_message_with_bot(m) for m in msgs],
+        "has_more": has_more,
+        "next_cursor": next_cursor,
+    })
 
 
 @bp.route("/<int:project_id>/conversations/<int:conversation_id>/pinned-messages", methods=["GET"])
