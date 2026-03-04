@@ -411,6 +411,7 @@ export function ChatInput({
       setMentionedAgents([]);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
+        textareaRef.current.focus();
       }
     } finally {
       isSendingRef.current = false;
@@ -972,7 +973,7 @@ export function ChatInput({
               onKeyDown={handleKeyDown}
               onInput={handleInput}
               placeholder='Nhập tin nhắn — gõ "/" cho lệnh nhanh, "@" để tag tác nhân'
-              disabled={isLoading || disabled}
+              disabled={disabled}
               className="min-h-10 max-h-50 resize-none border-0 bg-transparent px-2 py-2 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               rows={1}
             />
