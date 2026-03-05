@@ -102,14 +102,6 @@ def refactor_requirement_for_gemini(user_message: str) -> str:
 
 
 # --- Agent routing ---
-
-# Message shown when the request is out of scope and we assign Alex
-OUT_OF_SCOPE_ALEX_MESSAGE = (
-    "This request is outside the scope of the specialized agents. "
-    "The system has assigned Alex to help you."
-)
-
-
 def _agent_mention_patterns(agents: list[dict]) -> list[tuple[str, str]]:
     """Return [(pattern, agent_id), ...] for whole-word mention of agent name or id."""
     result = []
