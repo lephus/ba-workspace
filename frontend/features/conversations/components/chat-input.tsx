@@ -570,7 +570,7 @@ export function ChatInput({
       ".xlsx",
       ".xls",
     ]);
-    const MAX_BYTES = 5 * 1024 * 1024;
+    const MAX_BYTES = 500 * 1024 * 1024;
     const validFiles: File[] = [];
 
     Array.from(files).forEach((file) => {
@@ -582,7 +582,7 @@ export function ChatInput({
         return;
       }
       if (file.size > MAX_BYTES) {
-        toast.error(`"${file.name}" — vượt quá 5MB`);
+        toast.error(`"${file.name}" — vượt quá 500MB`);
         return;
       }
       validFiles.push(file);

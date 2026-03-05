@@ -3,7 +3,7 @@ import math
 from pathlib import Path
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls"}
-MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024  # 50 MB
+MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
 MAX_PAGE_COUNT = 300
 
 

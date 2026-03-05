@@ -104,7 +104,7 @@ def upload_document(project_id):
     if len(file_bytes) > MAX_FILE_SIZE_BYTES:
         size_mb = len(file_bytes) / (1024 * 1024)
         return jsonify({
-            "error": f"File vượt quá giới hạn 5MB (kích thước thực tế: {size_mb:.1f}MB)"
+            "error": f"File vượt quá giới hạn 500MB (kích thước thực tế: {size_mb:.1f}MB)"
         }), 400
 
     base_path = Path(_get_documents_path())
@@ -145,6 +145,8 @@ def upload_document(project_id):
         conversation_id=conversation_id,
         filename=file.filename,
         file_path=str(file_path),
+        file_type=suffix,
+        file_size=len(file_bytes),
         ai_task=ai_task,
         notes=notes,
     )

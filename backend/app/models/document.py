@@ -1,5 +1,7 @@
 """Document model."""
+import json
 from datetime import datetime
+from pathlib import Path
 
 from app.models import db
 
@@ -14,6 +16,8 @@ class Document(db.Model):
     conversation_id = db.Column(db.Integer, db.ForeignKey("conversations.id"), nullable=True)
     filename = db.Column(db.String(512), nullable=False)
     file_path = db.Column(db.String(1024), nullable=False)
+    file_type = db.Column(db.String(32), nullable=True)   # e.g. .pdf, .docx
+    file_size = db.Column(db.BigInteger, nullable=True)   # size in bytes
     ai_task = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     # RAG fields — populated after AI processing
@@ -28,7 +32,6 @@ class Document(db.Model):
     analyses = db.relationship("Analysis", back_populates="document", cascade="all, delete-orphan")
 
     def to_dict(self):
-        import json
         keywords = []
         important_points = []
         try:
@@ -41,12 +44,26 @@ class Document(db.Model):
                 important_points = json.loads(self.important_points)
         except Exception:
             important_points = [self.important_points] if self.important_points else []
+        # Fallback file_type/file_size for docs created before these columns existed
+        file_type = self.file_type
+        if file_type is None and self.filename:
+            file_type = Path(self.filename).suffix.lower() or None
+        file_size = self.file_size
+        if file_size is None and self.file_path:
+            try:
+                p = Path(self.file_path)
+                if p.is_file():
+                    file_size = p.stat().st_size
+            except OSError:
+                pass
         return {
             "id": self.id,
             "project_id": self.project_id,
             "conversation_id": self.conversation_id,
             "filename": self.filename,
             "file_path": self.file_path,
+            "file_type": file_type,
+            "file_size": file_size,
             "ai_task": self.ai_task,
             "notes": self.notes,
             "summary": self.summary,

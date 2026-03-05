@@ -102,3 +102,21 @@ def migrate_add_message_attachments(app):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+
+def migrate_add_documents_file_type_size(app):
+    """Add file_type and file_size to documents if missing (for existing DBs)."""
+    columns = [
+        ("file_type", "VARCHAR(32)"),
+        ("file_size", "BIGINT"),
+    ]
+    with app.app_context():
+        for column, col_type in columns:
+            try:
+                db.session.execute(text(f"SELECT {column} FROM documents LIMIT 1"))
+            except Exception:
+                try:
+                    db.session.execute(text(f"ALTER TABLE documents ADD COLUMN {column} {col_type}"))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()

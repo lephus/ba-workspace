@@ -144,7 +144,7 @@ Array.from(files).forEach((file) => {
     return;
   }
   if (file.size > MAX_BYTES) {
-    toast.error(`"${file.name}" — vượt quá 5MB`);
+    toast.error(`"${file.name}" — vượt quá 500MB`);
     return;
   }
   validFiles.push(file);
