@@ -6,7 +6,7 @@ export interface ApiKey {
   last_error: string | null;
   last_used_at: string | null;
   created_at: string | null;
-  source: "env" | "ui";
+  source: "ui";
   is_current: boolean;
 }
 

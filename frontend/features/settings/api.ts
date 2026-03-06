@@ -51,6 +51,21 @@ export async function toggleApiKeyApi(
   return res.json();
 }
 
+export async function setActiveKeyApi(
+  id: number,
+): Promise<{ message: string; current_key: ApiKey }> {
+  const res = await fetch(`${API_URL}/api-keys/set-active`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || "Không thể đổi key");
+  }
+  return res.json();
+}
+
 export async function validateApiKeyApi(
   key: string,
 ): Promise<ValidateApiKeyResult> {

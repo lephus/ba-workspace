@@ -5,6 +5,7 @@ import {
   deleteApiKeyApi,
   toggleApiKeyApi,
   validateApiKeyApi,
+  setActiveKeyApi,
 } from "./api";
 import type { AddApiKeyInput } from "./types";
 
@@ -52,5 +53,16 @@ export function useToggleApiKey() {
 export function useValidateApiKey() {
   return useMutation({
     mutationFn: (key: string) => validateApiKeyApi(key),
+  });
+}
+
+export function useSetActiveKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => setActiveKeyApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["rate-limit"] });
+    },
   });
 }

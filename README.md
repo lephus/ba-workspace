@@ -73,12 +73,11 @@ The script will:
    ./start.sh
    ```
 
-4. If the script says there’s no `.env`, edit `.env` (add `GEMINI_API_KEY`), then run `./start.sh` again.
-5. When you see “Open your browser and go to…”, open your browser and visit:
+4. When you see "Open your browser and go to…", open your browser and visit:
 
    **http://localhost:3000**
 
-6. To stop: press **Ctrl+C** in the terminal where `start.sh` is running.
+5. To stop: press **Ctrl+C** in the terminal where `start.sh` is running.
 
 ### Manual run (if you prefer the command line)
 
@@ -108,11 +107,11 @@ The script will:
 
 ## Summary
 
-| Item        | Description |
-|------------|-------------|
-| **About**  | BA Workspace – AI app for BAs; turns requirements and conversations into a knowledge graph. |
-| **Config** | Create `.env` from `.env.example` and set `GEMINI_API_KEY` (get it at https://aistudio.google.com/app/apikey). |
-| **Run**    | From project root: `./start.sh` → open http://localhost:3000. |
-| **Stop**   | Press Ctrl+C in the terminal running `start.sh`. |
+| Item       | Description                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| **About**  | BA Workspace – AI app for BAs; turns requirements and conversations into a knowledge graph.                   |
+| **Config** | Create `.env` from `.env.example`. Add your Gemini API key via the app UI after launch (Settings → API Keys). |
+| **Run**    | From project root: `./start.sh` → open http://localhost:3000.                                                 |
+| **Stop**   | Press Ctrl+C in the terminal running `start.sh`.                                                              |
 
-If something fails, double-check that `.env` exists and that `GEMINI_API_KEY` is set correctly.
+If something fails, double-check that `.env` exists with the correct port settings.

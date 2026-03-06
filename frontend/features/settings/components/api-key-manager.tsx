@@ -33,6 +33,7 @@ import {
   useDeleteApiKey,
   useToggleApiKey,
   useValidateApiKey,
+  useSetActiveKey,
 } from "@/features/settings/hooks";
 import type { ApiKey } from "@/features/settings/types";
 import { toast } from "sonner";
@@ -48,6 +49,7 @@ export function ApiKeyManager() {
   const deleteKey = useDeleteApiKey();
   const toggleKey = useToggleApiKey();
   const validateKey = useValidateApiKey();
+  const setActiveKey = useSetActiveKey();
 
   const handleAddKey = async () => {
     if (!newKey.trim()) {
@@ -83,6 +85,16 @@ export function ApiKeyManager() {
     try {
       await toggleKey.mutateAsync({ keyId, isActive: !isActive });
       toast.success(isActive ? "Đã tắt API key" : "Đã bật API key");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Lỗi không xác định";
+      toast.error(msg);
+    }
+  };
+
+  const handleSetActive = async (apiKey: ApiKey) => {
+    try {
+      await setActiveKey.mutateAsync(apiKey.id!);
+      toast.success("Đã chuyển sang key này");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Lỗi không xác định";
       toast.error(msg);
@@ -154,6 +166,7 @@ export function ApiKeyManager() {
                 apiKey={apiKey}
                 onDelete={handleDelete}
                 onToggle={handleToggle}
+                onSetActive={handleSetActive}
               />
             ))
           )}
@@ -229,8 +242,8 @@ export function ApiKeyManager() {
         {/* Info */}
         <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1 mt-2">
           <p>
-            <strong>Ưu tiên:</strong> Key từ file .env luôn được sử dụng trước.
-            Nếu không có hoặc bị lỗi, hệ thống sẽ dùng key từ UI.
+            <strong>Chọn key:</strong> Nhấn nút &quot;Sử dụng&quot; để chuyển
+            sang key mong muốn. Tất cả các key đều được đối xử ngang bằng.
           </p>
           <p>
             <strong>Tự động đổi key:</strong> Khi một key bị lỗi (hết quota,
@@ -246,10 +259,12 @@ function ApiKeyRow({
   apiKey,
   onDelete,
   onToggle,
+  onSetActive,
 }: {
   apiKey: ApiKey;
   onDelete: (id: number) => void;
   onToggle: (id: number, isActive: boolean) => void;
+  onSetActive: (apiKey: ApiKey) => void;
 }) {
   return (
     <div
@@ -285,12 +300,7 @@ function ApiKeyRow({
               Đang dùng
             </Badge>
           )}
-          {apiKey.source === "env" && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              .env
-            </Badge>
-          )}
-          {apiKey.label && apiKey.source !== "env" && (
+          {apiKey.label && (
             <span className="text-xs text-muted-foreground truncate">
               {apiKey.label}
             </span>
@@ -309,32 +319,47 @@ function ApiKeyRow({
         )}
       </div>
 
-      {/* Actions - only for UI keys */}
-      {apiKey.source === "ui" && apiKey.id !== null && (
-        <div className="flex items-center gap-1 shrink-0">
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        {/* Set active button - show for all active keys that are not currently in use */}
+        {apiKey.is_active && !apiKey.is_current && (
           <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => onToggle(apiKey.id!, apiKey.is_active)}
-            title={apiKey.is_active ? "Tắt key" : "Bật key"}
+            variant="outline"
+            size="sm"
+            className="h-6 text-[10px] px-2"
+            onClick={() => onSetActive(apiKey)}
+            title="Sử dụng key này"
           >
-            {apiKey.is_active ? (
-              <ToggleRight className="size-4 text-green-500" />
-            ) : (
-              <ToggleLeft className="size-4" />
-            )}
+            Sử dụng
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => onDelete(apiKey.id!)}
-            title="Xoá key"
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="size-4" />
-          </Button>
-        </div>
-      )}
+        )}
+        {/* Toggle & Delete - only for UI keys */}
+        {apiKey.source === "ui" && apiKey.id !== null && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => onToggle(apiKey.id!, apiKey.is_active)}
+              title={apiKey.is_active ? "Tắt key" : "Bật key"}
+            >
+              {apiKey.is_active ? (
+                <ToggleRight className="size-4 text-green-500" />
+              ) : (
+                <ToggleLeft className="size-4" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => onDelete(apiKey.id!)}
+              title="Xoá key"
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
