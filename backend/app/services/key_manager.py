@@ -1,21 +1,20 @@
 """
 Multi-key manager for Gemini API keys.
 
-Priority:
-  1. GEMINI_API_KEY from .env (always tried first)
-  2. Active UI keys from the database (ordered by last_used_at ASC → least-recently-used first)
+All keys are managed entirely through the UI (stored in the database).
+Users can manually select which key to use via set_active_key().
+When a key fails, the system auto-rotates to the next available key.
 
 Provides:
   - get_current_api_key()   → best available key string
   - rotate_key(failed, msg) → mark failed & switch to next (raises ValueError if none left)
   - mark_key_used(key)      → update last_used_at in DB
   - get_current_key_info()  → {key_masked, source, id} of the active key (for UI)
+  - set_active_key(key_id)  → manually choose which key to use
 """
 import logging
 import threading
 from datetime import datetime
-
-from flask import current_app
 
 logger = logging.getLogger(__name__)
 
@@ -24,23 +23,13 @@ _lock = threading.Lock()
 # In-memory state: which key is currently "active"
 _current_key: str | None = None
 _failed_keys: set[str] = set()  # keys that failed in the current "round"
+_preferred_id: int | None = None  # DB key id of the preferred key
 
 
 def _mask(key: str) -> str:
     if len(key) > 12:
         return key[:8] + "..." + key[-4:]
     return "***"
-
-
-def _env_key() -> str | None:
-    """Return the .env GEMINI_API_KEY if set and non-empty."""
-    try:
-        val = current_app.config.get("GEMINI_API_KEY", "").strip()
-        return val or None
-    except RuntimeError:
-        import os
-        val = os.getenv("GEMINI_API_KEY", "").strip()
-        return val or None
 
 
 def _db_keys() -> list[dict]:
@@ -61,16 +50,26 @@ def _db_keys() -> list[dict]:
 
 def _all_candidate_keys() -> list[dict]:
     """
-    Build ordered list of candidate keys.
-    Returns list of {"key": str, "source": "env"|"ui", "id": int|None, "label": str|None}
+    Build ordered list of candidate keys (UI keys from DB only).
+    If a preferred key is set, it appears first.
+    Returns list of {"key": str, "source": "ui", "id": int, "label": str|None}
     """
-    candidates = []
-    env = _env_key()
-    if env:
-        candidates.append({"key": env, "source": "env", "id": None, "label": ".env"})
+    raw = []
     for row in _db_keys():
-        candidates.append({"key": row["key"], "source": "ui", "id": row["id"], "label": row.get("label")})
-    return candidates
+        raw.append({"key": row["key"], "source": "ui", "id": row["id"], "label": row.get("label")})
+
+    # Put preferred key first if set
+    if _preferred_id is not None:
+        preferred = []
+        rest = []
+        for c in raw:
+            if c["id"] == _preferred_id:
+                preferred.append(c)
+            else:
+                rest.append(c)
+        return preferred + rest
+
+    return raw
 
 
 def get_current_api_key() -> str:
@@ -83,7 +82,7 @@ def get_current_api_key() -> str:
     with _lock:
         candidates = _all_candidate_keys()
         if not candidates:
-            raise ValueError("Không có API key nào được cấu hình. Thêm key qua UI hoặc file .env")
+            raise ValueError("Không có API key nào được cấu hình. Vui lòng thêm key qua UI.")
 
         # If current key is still valid (not failed), keep using it
         if _current_key and _current_key not in _failed_keys:
@@ -175,13 +174,39 @@ def get_current_key_info() -> dict | None:
         }
 
 
+def set_active_key(key_id: int) -> dict:
+    """
+    Manually set which UI key to use as the preferred/active key.
+    key_id: the DB id of the ApiKey row
+    Returns the key info dict.
+    Raises ValueError if key not found.
+    """
+    global _current_key, _preferred_id
+
+    with _lock:
+        _preferred_id = key_id
+        _failed_keys.clear()
+
+        candidates = _all_candidate_keys()
+        if not candidates:
+            raise ValueError("Không có API key nào.")
+
+        # The preferred key should now be first
+        _current_key = candidates[0]["key"]
+        return {
+            "key_masked": _mask(candidates[0]["key"]),
+            "source": candidates[0]["source"],
+            "id": candidates[0]["id"],
+            "label": candidates[0]["label"],
+        }
+
+
 def reset_failures() -> None:
     """Clear all failure state (useful after adding a new key)."""
     global _current_key
     with _lock:
         _failed_keys.clear()
         _current_key = None
-
 
 def _record_db_error(key: str, error_msg: str) -> None:
     """Record an error message on the DB key row (must be called with _lock held)."""

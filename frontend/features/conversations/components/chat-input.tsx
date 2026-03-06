@@ -814,7 +814,7 @@ export function ChatInput({
               </div>
             )}
 
-          <div className="grid grid-cols-[auto_1fr_auto] items-end gap-2 rounded-[28px] border bg-background p-2.5 transition-colors duration-200 ease-in-out">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-[28px] border bg-background p-2.5 transition-colors duration-200 ease-in-out">
             {/* ---- Chip row: documents + files + uploading + mentioned agents ---- */}
             {(selectedExistingDocuments.length > 0 ||
               selectedNewFiles.length > 0 ||
@@ -974,7 +974,7 @@ export function ChatInput({
               onInput={handleInput}
               placeholder='Nhập tin nhắn — gõ "/" cho lệnh nhanh, "@" để tag tác nhân'
               disabled={disabled}
-              className="min-h-10 max-h-50 resize-none border-0 bg-transparent px-2 py-2 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="min-h-10 max-h-50 resize-none border-0 bg-transparent px-2 pt-2.5 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               rows={1}
             />
             <div className="flex items-center gap-1.5">

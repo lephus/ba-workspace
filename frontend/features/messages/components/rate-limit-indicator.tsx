@@ -281,13 +281,7 @@ export function RateLimitIndicator() {
               <code className="font-mono text-foreground">
                 {status.current_key.key_masked}
               </code>
-              {status.current_key.source === "env" && (
-                <span className="ml-1 text-[10px] bg-muted px-1 py-0.5 rounded">
-                  .env
-                </span>
-              )}
-              {status.current_key.source === "ui" &&
-                status.current_key.label && (
+              {status.current_key.label && (
                   <span className="ml-1 text-[10px] text-muted-foreground">
                     ({status.current_key.label})
                   </span>

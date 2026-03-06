@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 
 from app.models import db
 from app.models.api_key import ApiKey
-from app.services.key_manager import get_current_key_info, reset_failures
+from app.services.key_manager import get_current_key_info, reset_failures, set_active_key
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ bp = Blueprint("api_keys", __name__)
 @bp.route("/api-keys", methods=["GET"])
 def list_keys():
     """
-    List all API keys (env + UI).
+    List all API keys (UI-managed only).
     ---
     tags:
       - API Keys
@@ -23,37 +23,19 @@ def list_keys():
       200:
         description: List of API keys with masked values
     """
-    import os
-    from flask import current_app
-
     keys = []
 
-    # 1) .env key (always first, read-only)
-    env_key = current_app.config.get("GEMINI_API_KEY", "").strip()
-    if env_key:
-        masked = env_key[:8] + "..." + env_key[-4:] if len(env_key) > 12 else "***"
-        keys.append({
-            "id": None,
-            "key_masked": masked,
-            "label": ".env",
-            "is_active": True,
-            "last_error": None,
-            "last_used_at": None,
-            "created_at": None,
-            "source": "env",
-        })
-
-    # 2) UI keys from database
+    # UI keys from database
     db_keys = ApiKey.query.order_by(ApiKey.created_at.asc()).all()
     for k in db_keys:
         d = k.to_dict()
         d["source"] = "ui"
         keys.append(d)
 
-    # 3) Annotate which key is currently active
+    # Annotate which key is currently active
     current = get_current_key_info()
     for k in keys:
-        if current and k["key_masked"] == current["key_masked"] and k["source"] == current["source"]:
+        if current and k["key_masked"] == current["key_masked"]:
             k["is_current"] = True
         else:
             k["is_current"] = False
@@ -191,6 +173,40 @@ def toggle_key(key_id: int):
     result = key.to_dict()
     result["source"] = "ui"
     return jsonify(result)
+
+
+@bp.route("/api-keys/set-active", methods=["POST"])
+def set_active():
+    """
+    Set which UI API key to use as the active/preferred key.
+    ---
+    tags:
+      - API Keys
+    parameters:
+      - in: body
+        name: body
+        schema:
+          type: object
+          required: [id]
+          properties:
+            id: { type: integer }
+    responses:
+      200:
+        description: Key set as active
+      400:
+        description: Invalid request
+    """
+    data = request.get_json(silent=True) or {}
+    key_id = data.get("id")
+
+    if key_id is None:
+        return jsonify({"error": "Cần chỉ định id của key"}), 400
+
+    try:
+        info = set_active_key(key_id)
+        return jsonify({"message": "Đã đổi key đang sử dụng", "current_key": info})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @bp.route("/api-keys/validate", methods=["POST"])

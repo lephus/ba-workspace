@@ -35,6 +35,5 @@ class Config:
 
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
     PROJECT_ROOT = str(PROJECT_ROOT)
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     SQLALCHEMY_DATABASE_URI = _init_db_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
