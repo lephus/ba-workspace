@@ -54,7 +54,7 @@ export function DeleteProjectDialog({
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteProject.isPending}
-            className="bg-destructive text-white hover:bg-destructive/90"
+            variant="destructive"
           >
             {deleteProject.isPending ? tc('deleting') : tc('delete')}
           </AlertDialogAction>

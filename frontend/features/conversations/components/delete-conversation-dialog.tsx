@@ -59,7 +59,7 @@ export function DeleteConversationDialog({
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteConversation.isPending}
-            className="bg-destructive text-white hover:bg-destructive/90"
+            variant="destructive"
           >
             {deleteConversation.isPending ? tc('deleting') : tc('delete')}
           </AlertDialogAction>

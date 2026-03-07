@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   getConversationsApi,
@@ -85,15 +86,25 @@ export function useUpdateConversation(projectId: number) {
 // Hook xóa conversation
 export function useDeleteConversation(projectId: number) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const params = useParams();
+  const activeConversationId = params.conversationId
+    ? Number(params.conversationId)
+    : null;
 
   return useMutation({
     mutationFn: (conversationId: number) =>
       deleteConversationApi(projectId, conversationId),
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
       queryClient.invalidateQueries({
         queryKey: conversationsKey(projectId),
       });
       toast.success("Xóa cuộc hội thoại thành công!");
+
+      // If the deleted conversation is the one currently being viewed, navigate back
+      if (activeConversationId && deletedId === activeConversationId) {
+        router.push(`/projects/${projectId}/conversations`);
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || "Xóa cuộc hội thoại thất bại");
@@ -120,7 +131,9 @@ export function useTogglePinConversation(projectId: number) {
       queryClient.invalidateQueries({
         queryKey: conversationsKey(projectId),
       });
-      toast.success(pinned ? "Đã ghim cuộc hội thoại" : "Đã bỏ ghim cuộc hội thoại");
+      toast.success(
+        pinned ? "Đã ghim cuộc hội thoại" : "Đã bỏ ghim cuộc hội thoại",
+      );
     },
     onError: (error: Error) => {
       toast.error(error.message || "Thao tác ghim thất bại");

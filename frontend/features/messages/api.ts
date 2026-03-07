@@ -1,6 +1,7 @@
 import { APP_CONFIG } from "@/config/app";
 import type {
   Message,
+  MessagePage,
   SendMessageInput,
   SendMessageResponse,
   PinnedMessage,
@@ -12,9 +13,15 @@ const API_URL = APP_CONFIG.API_URL;
 export async function getMessagesApi(
   projectId: number,
   conversationId: number,
-): Promise<Message[]> {
+  params?: { before?: number; limit?: number },
+): Promise<MessagePage> {
+  const searchParams = new URLSearchParams();
+  if (params?.before) searchParams.set("before", String(params.before));
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+  const qs = searchParams.toString();
+
   const response = await fetch(
-    `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages`,
+    `${API_URL}/projects/${projectId}/conversations/${conversationId}/messages${qs ? `?${qs}` : ""}`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -63,9 +70,9 @@ export async function sendMessageApi(
     if (response.status === 500) {
       throw new Error("Agent xử lý thất bại. Vui lòng thử lại.");
     }
-    throw new Error("Không thể gửi tin nhắn");
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error || "Không thể gửi tin nhắn");
   }
-
   return response.json();
 }
 

@@ -56,7 +56,7 @@ export function DeleteDocumentDialog({
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteDocument.isPending}
-            className="bg-destructive text-white hover:bg-destructive/90"
+            variant="destructive"
           >
             {deleteDocument.isPending ? tc('deleting') : tc('delete')}
           </AlertDialogAction>

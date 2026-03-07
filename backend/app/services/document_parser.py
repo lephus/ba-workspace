@@ -3,8 +3,8 @@ import math
 from pathlib import Path
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls"}
-MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
-MAX_PAGE_COUNT = 10
+MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
+MAX_PAGE_COUNT = 300
 
 
 def parse_document(file_path: str) -> dict:

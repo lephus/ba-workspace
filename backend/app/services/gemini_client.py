@@ -1,4 +1,5 @@
-"""Gemini API client."""
+"""Gemini API client with multi-key rotation support."""
+import logging
 from flask import current_app
 from app.services.rate_limiter import (
     record_request,
@@ -10,6 +11,10 @@ from app.services.rate_limiter import (
     invalidate_key_cache,
 )
 
+logger = logging.getLogger(__name__)
+
+# Track the key that the current _genai / _gen_model were configured with
+_configured_key: str | None = None
 _gen_model = None
 _genai = None
 
@@ -24,16 +29,27 @@ class GeminiAuthError(Exception):
     pass
 
 
-def _ensure_configured():
-    global _genai
-    if _genai is None:
-        import google.generativeai as genai
+def _get_active_key() -> str:
+    """Get the current best API key via the key manager."""
+    from app.services.key_manager import get_current_api_key
+    return get_current_api_key()
 
-        api_key = current_app.config.get("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY is not set")
-        genai.configure(api_key=api_key)
-        _genai = genai
+
+def _ensure_configured(force_key: str | None = None):
+    """Configure genai with the current active key. Re-configures if key changed."""
+    global _genai, _gen_model, _configured_key
+    import google.generativeai as genai
+
+    api_key = force_key or _get_active_key()
+
+    if _genai is not None and _configured_key == api_key:
+        return _genai
+
+    # (Re-)configure with new/different key
+    genai.configure(api_key=api_key)
+    _genai = genai
+    _gen_model = None  # invalidate cached model
+    _configured_key = api_key
     return _genai
 
 
@@ -91,18 +107,47 @@ def validate_api_key() -> dict:
 
 def generate_text(prompt: str) -> str:
     """
-    Simple single-turn text generation with full error handling.
+    Simple single-turn text generation with full error handling and key rotation.
     Use this for any one-off Gemini call (e.g. agent routing).
     Raises GeminiRateLimitError or GeminiAuthError on API errors.
     """
-    model = get_model()
-    record_request()
-    try:
-        response = model.generate_content(prompt)
-    except Exception as e:
-        _handle_api_error(e)
-        raise
-    return response.text if response.text else ""
+    from app.services.key_manager import rotate_key, mark_key_used
+
+    max_retries = 5
+    last_exception = None
+
+    for attempt in range(max_retries):
+        current_key = _get_active_key()
+        _ensure_configured()
+        model = get_model()
+        record_request()
+        try:
+            response = model.generate_content(prompt)
+            mark_key_used(current_key)
+            return response.text if response.text else ""
+        except Exception as e:
+            last_exception = e
+            if _is_quota_or_rate_error(e) or _is_auth_error(e):
+                error_msg = str(e)[:200]
+                logger.warning("Key %s...%s failed (attempt %d): %s",
+                               current_key[:8], current_key[-4:], attempt + 1, error_msg)
+                try:
+                    rotate_key(current_key, error_msg)
+                    _ensure_configured()  # reconfigure with new key
+                    logger.info("Rotated to new key, retrying...")
+                    continue
+                except ValueError:
+                    # No more keys available
+                    _handle_api_error(e)
+                    raise
+            else:
+                _handle_api_error(e)
+                raise
+
+    # All retries exhausted
+    if last_exception:
+        _handle_api_error(last_exception)
+        raise last_exception
 
 
 def generate_content(system_prompt: str, user_message: str) -> str:
@@ -116,15 +161,13 @@ def generate_content(system_prompt: str, user_message: str) -> str:
 
 def generate_chat(system_prompt: str, messages: list[dict], new_user_content: str) -> str:
     """
-    Multi-turn chat with conversation history.
+    Multi-turn chat with conversation history and key rotation.
     messages: list of {"role": "user"|"assistant", "content": str}
     new_user_content: the latest user message (will be sent via send_message).
     Returns the model reply as text.
     """
     import google.generativeai as genai
-
-    _ensure_configured()
-    model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_prompt)
+    from app.services.key_manager import rotate_key, mark_key_used
 
     # Build history for Gemini: "user" and "model" (map assistant -> model)
     history = []
@@ -139,14 +182,41 @@ def generate_chat(system_prompt: str, messages: list[dict], new_user_content: st
             history.append({"role": "user", "parts": [content]})
         # skip system: already in system_instruction
 
-    chat = model.start_chat(history=history)
-    record_request()
-    try:
-        response = chat.send_message(new_user_content)
-    except Exception as e:
-        _handle_api_error(e)
-        raise
-    return response.text if response.text else ""
+    max_retries = 5
+    last_exception = None
+
+    for attempt in range(max_retries):
+        current_key = _get_active_key()
+        _ensure_configured()
+
+        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_prompt)
+        chat = model.start_chat(history=history)
+        record_request()
+        try:
+            response = chat.send_message(new_user_content)
+            mark_key_used(current_key)
+            return response.text if response.text else ""
+        except Exception as e:
+            last_exception = e
+            if _is_quota_or_rate_error(e) or _is_auth_error(e):
+                error_msg = str(e)[:200]
+                logger.warning("Key %s...%s failed in chat (attempt %d): %s",
+                               current_key[:8], current_key[-4:], attempt + 1, error_msg)
+                try:
+                    rotate_key(current_key, error_msg)
+                    _ensure_configured()
+                    logger.info("Rotated to new key, retrying chat...")
+                    continue
+                except ValueError:
+                    _handle_api_error(e)
+                    raise
+            else:
+                _handle_api_error(e)
+                raise
+
+    if last_exception:
+        _handle_api_error(last_exception)
+        raise last_exception
 
 
 def _handle_api_error(e: Exception) -> None:

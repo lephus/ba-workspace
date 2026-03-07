@@ -34,7 +34,7 @@ if [ ! -f "$ROOT/.env" ]; then
   echo ""
   echo "⚠️  You need to add your API key to .env for full functionality:"
   echo "   1. Open the file: .env (same folder as start.sh)"
-  echo "   2. Replace 'your_gemini_api_key_here' with your actual API key"
+  echo "   2. Optionally add any environment configuration"
   echo "   3. Get a free API key at: https://aistudio.google.com/app/apikey"
   echo ""
   read -p "Have you updated .env? (Press Enter to continue, Ctrl+C to exit and edit later): " _
@@ -73,7 +73,7 @@ cd "$ROOT" && python3 backend/run.py &
 BE_PID=$!
 sleep 2
 if ! kill -0 "$BE_PID" 2>/dev/null; then
-  echo "❌ Backend failed to start. Check .env (especially GEMINI_API_KEY) and try again."
+  echo "❌ Backend failed to start. Check .env configuration and try again."
   exit 1
 fi
 echo "✓ Backend is running."

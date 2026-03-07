@@ -1,14 +1,19 @@
 """Messages API."""
 import json
+import logging
+
 from flask import Blueprint, jsonify, request
 
 from app.models import Conversation, Document, Message, PinnedMessage, Project, db
 from app.services.content_normalizer import normalize_user_content
 from app.services.conversation_agent import get_agent_reply, get_conversation_bot
-from app.services.export_detector import detect_export_format
+from app.services.export_detector import detect_export_format, detect_template_type
 from app.services.export_service import EXPORT_EXT, save_export_to_project
+from app.services.template_export import generate_and_save_template
 from app.services.gemini_client import GeminiRateLimitError, GeminiAuthError
 from app.services.rate_limiter import get_status as get_rate_limit_status
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("messages", __name__)
 
@@ -49,8 +54,31 @@ def list_messages(project_id, conversation_id):
     conv = Conversation.query.filter_by(
         id=conversation_id, project_id=project_id
     ).first_or_404()
-    msgs = Message.query.filter_by(conversation_id=conv.id).order_by(Message.created_at.asc()).all()
-    return jsonify([_message_with_bot(m) for m in msgs])
+
+    limit = request.args.get("limit", 20, type=int)
+    before = request.args.get("before", None, type=int)
+
+    query = Message.query.filter_by(conversation_id=conv.id)
+    if before:
+        query = query.filter(Message.id < before)
+
+    # Fetch limit+1 to check if there are more older messages
+    query = query.order_by(Message.id.desc()).limit(limit + 1)
+    msgs = query.all()
+
+    has_more = len(msgs) > limit
+    if has_more:
+        msgs = msgs[:limit]
+
+    msgs.reverse()  # Back to chronological order
+
+    next_cursor = msgs[0].id if has_more and msgs else None
+
+    return jsonify({
+        "messages": [_message_with_bot(m) for m in msgs],
+        "has_more": has_more,
+        "next_cursor": next_cursor,
+    })
 
 
 @bp.route("/<int:project_id>/conversations/<int:conversation_id>/pinned-messages", methods=["GET"])
@@ -317,18 +345,34 @@ def create_message(project_id, conversation_id):
         payload["bot"] = get_conversation_bot(primary_agent_id)
         payload["agents_involved"] = selected_agent_ids or []
 
-        # If user asked for export with a format, save file and return download link
+        # ── Export handling ──────────────────────────────────────────────
+        # Template-based export takes priority when a known BA template
+        # type is detected (BRD, FRD, Backlog, Charter).
+        # Falls back to generic markdown export otherwise.
         export_format = detect_export_format(content)
-        if export_format and export_format in EXPORT_EXT and reply_text.strip():
+        template_type = detect_template_type(content)
+
+        if template_type and export_format in ("docx", None):
+            try:
+                filename = generate_and_save_template(
+                    project_id, conv.id, template_type
+                )
+                payload["export_requested"] = {
+                    "format": "docx",
+                    "download_url": f"/api/v1/projects/{project_id}/exports/{filename}",
+                    "filename": filename,
+                }
+            except Exception:
+                logger.exception("Template export failed for type=%s", template_type)
+        elif export_format and export_format in EXPORT_EXT and reply_text.strip():
             try:
                 filename = save_export_to_project(project_id, reply_text, export_format)
-                # Relative path; frontend prepends API base for same-origin or proxy
                 payload["export_requested"] = {
                     "format": export_format,
                     "download_url": f"/api/v1/projects/{project_id}/exports/{filename}",
                     "filename": filename,
                 }
             except Exception:
-                pass  # Do not fail the request if export save fails
+                logger.exception("Generic export failed for format=%s", export_format)
 
     return jsonify(payload), 201

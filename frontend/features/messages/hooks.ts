@@ -1,7 +1,14 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+  InfiniteData,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
+import { APP_CONFIG } from "@/config/app";
 import {
   getMessagesApi,
   sendMessageApi,
@@ -12,9 +19,9 @@ import {
 import { getRateLimitApi } from "./rate-limit-api";
 import type {
   Message,
+  MessagePage,
   SendMessageInput,
   SendMessageResponse,
-  PinnedMessage,
 } from "./types";
 
 function messagesKey(projectId: number, conversationId: number) {
@@ -31,11 +38,24 @@ function pinnedMessagesKey(projectId: number, conversationId: number) {
   ];
 }
 
-// Hook lấy danh sách messages
+const INITIAL_PAGE_SIZE = 20;
+const LOAD_MORE_SIZE = 5;
+
+// Hook lấy danh sách messages (phân trang vô hạn)
 export function useMessages(projectId: number, conversationId: number) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: messagesKey(projectId, conversationId),
-    queryFn: () => getMessagesApi(projectId, conversationId),
+    queryFn: ({ pageParam }) =>
+      getMessagesApi(projectId, conversationId, {
+        before: pageParam ?? undefined,
+        limit: pageParam ? LOAD_MORE_SIZE : INITIAL_PAGE_SIZE,
+      }),
+    initialPageParam: null as number | null,
+    getPreviousPageParam: (firstPage) =>
+      firstPage.has_more && firstPage.next_cursor != null
+        ? firstPage.next_cursor
+        : undefined,
+    getNextPageParam: () => undefined,
     enabled: !!projectId && !!conversationId,
   });
 }
@@ -49,19 +69,17 @@ export function useSendMessage(projectId: number, conversationId: number) {
     mutationFn: (data: SendMessageInput) =>
       sendMessageApi(projectId, conversationId, data),
     onMutate: async (data: SendMessageInput) => {
-      // Cancel outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: key });
 
-      const previous = queryClient.getQueryData<Message[]>(key);
+      const previous = queryClient.getQueryData<InfiniteData<MessagePage>>(key);
 
-      // Build a temporary user message shown immediately
       const optimisticContent =
         typeof data.content === "string"
           ? data.content
           : data.content.parts.join("\n");
 
       const optimisticMsg: Message = {
-        id: Date.now(), // temp id
+        id: Date.now(),
         conversation_id: conversationId,
         role: "user",
         content: optimisticContent,
@@ -69,37 +87,47 @@ export function useSendMessage(projectId: number, conversationId: number) {
         attachments: data.attachments,
       };
 
-      queryClient.setQueryData<Message[]>(key, (old) => [
-        ...(old ?? []),
-        optimisticMsg,
-      ]);
+      queryClient.setQueryData<InfiniteData<MessagePage>>(key, (old) => {
+        if (!old) return old;
+        const pages = [...old.pages];
+        const lastPage = pages[pages.length - 1];
+        pages[pages.length - 1] = {
+          ...lastPage,
+          messages: [...lastPage.messages, optimisticMsg],
+        };
+        return { ...old, pages };
+      });
 
       return { previous };
     },
     onSuccess: (response: SendMessageResponse) => {
-      // Replace optimistic data with real server data
-      queryClient.setQueryData<Message[]>(key, (old) => {
-        // Remove the optimistic user message (temp id) and append server messages
-        const withoutOptimistic = (old ?? []).filter((m) =>
-          m.id !== response.message.id && m.id >= 1e12
-            ? false // remove temp messages
-            : true,
-        );
-        // Simpler: keep all real messages, remove temp ones, then append server response
-        const real = (old ?? []).filter((m) => m.id < 1e12);
-        const result = [...real, response.message];
+      queryClient.setQueryData<InfiniteData<MessagePage>>(key, (old) => {
+        if (!old) return old;
+        const pages = [...old.pages];
+        const lastPage = pages[pages.length - 1];
+        const realMessages = lastPage.messages.filter((m) => m.id < 1e12);
+        const newMessages = [...realMessages, response.message];
         if (response.assistant_message) {
-          result.push(response.assistant_message);
+          const assistantMsg = { ...response.assistant_message };
+          if (response.export_requested) {
+            assistantMsg.export_file = {
+              ...response.export_requested,
+              download_url: `${APP_CONFIG.API_URL}/projects/${projectId}/exports/${response.export_requested.filename}`,
+            };
+          }
+          newMessages.push(assistantMsg);
         }
-        return result;
+        pages[pages.length - 1] = { ...lastPage, messages: newMessages };
+        return { ...old, pages };
       });
     },
     onError: (_error: Error, _data, context) => {
-      // Rollback to previous state
       if (context?.previous) {
-        queryClient.setQueryData<Message[]>(key, context.previous);
+        queryClient.setQueryData<InfiniteData<MessagePage>>(
+          key,
+          context.previous,
+        );
       }
-      // Invalidate rate-limit so indicator updates immediately
       queryClient.invalidateQueries({ queryKey: ["rate-limit"] });
       toast.error(_error.message || "Gửi tin nhắn thất bại");
     },

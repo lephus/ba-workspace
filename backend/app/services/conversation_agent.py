@@ -1,15 +1,19 @@
 """Conversation agent: BA chat with history; router selects agent(s), multiple agents may collaborate."""
+import logging
 from pathlib import Path
 from typing import Optional
 
 from app.agents.base import get_agent_bot_info
-from app.models import Message
+from app.models import Message, Conversation
 from app.services.agent_router import (
     get_agent_info_from_config,
     load_agents_config,
+    refactor_requirement_for_gemini,
     route_to_agents,
 )
 from app.services.gemini_client import generate_chat
+
+logger = logging.getLogger(__name__)
 
 # Fallback when config has no agents or router returns none
 CONVERSATION_AGENT_ID = "alex"
@@ -98,15 +102,32 @@ def get_conversation_bot(primary_agent_id: Optional[str] = None) -> dict:
 def get_agent_reply(conversation_id: int, new_user_content: str) -> tuple[str, list[str]]:
     """
     Infer which agent(s) to use, build combined prompt when multiple agents, then reply.
+    First runs intelligent requirement analyzer to refactor user input; routing and
+    reply use the refactored requirement so Gemini understands correctly.
     Returns (reply_text, selected_agent_ids). Caller may use selected_agent_ids[0] for bot.
     """
-    selected_ids = route_to_agents(new_user_content)
+    refactored_content = refactor_requirement_for_gemini(new_user_content)
+    selected_ids, out_of_scope = route_to_agents(refactored_content)
     agents_config = load_agents_config()
     selected_agents = [a for a in agents_config if a.get("id") in selected_ids]
     if selected_agents:
         system_prompt = _build_multi_agent_system_prompt(selected_agents)
     else:
         system_prompt = get_conversation_system_prompt()
+
+    # ── Inject project-wide document context (RAG summaries) ─────────────
+    # All RAG-processed documents in the project are available to every
+    # conversation, so the agent has knowledge of uploaded materials
+    # without needing the user to re-attach them each time.
+    try:
+        conv = Conversation.query.get(conversation_id)
+        if conv:
+            from app.services.document_rag import build_project_documents_context
+            doc_context = build_project_documents_context(conv.project_id)
+            if doc_context:
+                system_prompt = f"{system_prompt}\n\n{doc_context}"
+    except Exception as exc:
+        logger.warning("Failed to inject project docs context: %s", exc)
 
     messages = (
         Message.query.filter_by(conversation_id=conversation_id)
@@ -118,5 +139,5 @@ def get_agent_reply(conversation_id: int, new_user_content: str) -> tuple[str, l
         for m in messages
         if m.role in ("user", "assistant")
     ]
-    reply_text = generate_chat(system_prompt, history, new_user_content)
+    reply_text = generate_chat(system_prompt, history, refactored_content)
     return reply_text, selected_ids

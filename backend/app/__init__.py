@@ -42,6 +42,7 @@ def create_app(config=None):
     from app.api.messages import bp as messages_bp
     from app.api.documents import bp as documents_bp
     from app.api.analysis import bp as analysis_bp
+    from app.api.api_keys import bp as api_keys_bp
 
     app.register_blueprint(health_bp, url_prefix="/api/v1")
     app.register_blueprint(projects_bp, url_prefix="/api/v1/projects")
@@ -49,6 +50,7 @@ def create_app(config=None):
     app.register_blueprint(messages_bp, url_prefix="/api/v1/projects")
     app.register_blueprint(documents_bp, url_prefix="/api/v1/projects")
     app.register_blueprint(analysis_bp, url_prefix="/api/v1")
+    app.register_blueprint(api_keys_bp, url_prefix="/api/v1")
 
     # Init DB
     from app.models import db
@@ -60,6 +62,7 @@ def create_app(config=None):
             migrate_add_conversation_columns,
             migrate_add_conversation_pinned_at,
             migrate_add_documents_ai_task,
+            migrate_add_documents_file_type_size,
             migrate_add_documents_notes,
             migrate_add_documents_rag_fields,
             migrate_add_message_agent_id,
@@ -72,6 +75,11 @@ def create_app(config=None):
         migrate_add_documents_ai_task(app)
         migrate_add_documents_notes(app)
         migrate_add_documents_rag_fields(app)
+        migrate_add_documents_file_type_size(app)
         migrate_add_message_attachments(app)
+
+        # Ensure api_keys table exists
+        from app.models.api_key import ApiKey  # noqa: F401
+        db.create_all()
 
     return app

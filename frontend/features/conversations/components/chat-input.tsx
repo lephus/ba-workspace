@@ -111,6 +111,7 @@ interface ChatInputProps {
   existingDocuments?: ExistingDocumentItem[];
   isLoading?: boolean;
   disabled?: boolean;
+  autoFocus?: boolean;
 }
 
 export function ChatInput({
@@ -119,6 +120,7 @@ export function ChatInput({
   existingDocuments = [],
   isLoading,
   disabled,
+  autoFocus = false,
 }: ChatInputProps) {
   const t = useTranslations('chatInput');
   const [value, setValue] = useState("");
@@ -134,6 +136,13 @@ export function ChatInput({
   >([]);
   const uploadedFileNamesRef = useRef<Map<number, string>>(new Map());
   const isSendingRef = useRef(false);
+
+  /* ---- Auto-focus on mount ---- */
+  useEffect(() => {
+    if (autoFocus) {
+      textareaRef.current?.focus();
+    }
+  }, [autoFocus]);
 
   /* ---- Message history (Arrow Up/Down like ChatGPT) ---- */
   const messageHistoryRef = useRef<string[]>([]);
@@ -405,6 +414,7 @@ export function ChatInput({
       setMentionedAgents([]);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
+        textareaRef.current.focus();
       }
     } finally {
       isSendingRef.current = false;
@@ -563,7 +573,7 @@ export function ChatInput({
       ".xlsx",
       ".xls",
     ]);
-    const MAX_BYTES = 5 * 1024 * 1024;
+    const MAX_BYTES = 500 * 1024 * 1024;
     const validFiles: File[] = [];
 
     Array.from(files).forEach((file) => {
@@ -807,7 +817,7 @@ export function ChatInput({
               </div>
             )}
 
-          <div className="grid grid-cols-[auto_1fr_auto] items-end gap-2 rounded-[28px] border bg-background p-2.5 transition-colors duration-200 ease-in-out">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-[28px] border bg-background p-2.5 transition-colors duration-200 ease-in-out">
             {/* ---- Chip row: documents + files + uploading + mentioned agents ---- */}
             {(selectedExistingDocuments.length > 0 ||
               selectedNewFiles.length > 0 ||
@@ -967,7 +977,7 @@ export function ChatInput({
               onInput={handleInput}
               placeholder={t('placeholder')}
               disabled={isLoading || disabled}
-              className="min-h-10 max-h-50 resize-none border-0 bg-transparent px-2 py-2 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="min-h-10 max-h-50 resize-none border-0 bg-transparent px-2 pt-2.5 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               rows={1}
             />
             <div className="flex items-center gap-1.5">

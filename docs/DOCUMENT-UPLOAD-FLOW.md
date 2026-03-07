@@ -49,8 +49,8 @@ Khi người dùng **gửi message kèm tài liệu**, hệ thống sẽ:
 | Quy tắc                    | Giá trị                                          |
 | -------------------------- | ------------------------------------------------ |
 | Định dạng chấp nhận        | `.pdf`, `.docx`, `.doc`, `.txt`, `.xlsx`, `.xls` |
-| Kích thước tối đa          | **5 MB**                                         |
-| Số trang tối đa            | **10 trang**                                     |
+| Kích thước tối đa          | **100 MB**                                         |
+| Số trang tối đa            | **300 trang**                                     |
 | Cách tính trang — PDF      | Đếm thực tế (`len(reader.pages)`)                |
 | Cách tính trang — DOCX/DOC | Ước lượng: `ceil(word_count / 300)`              |
 | Cách tính trang — TXT      | Ước lượng: `ceil(char_count / 1800)`             |
@@ -144,7 +144,7 @@ Array.from(files).forEach((file) => {
     return;
   }
   if (file.size > MAX_BYTES) {
-    toast.error(`"${file.name}" — vượt quá 5MB`);
+    toast.error(`"${file.name}" — vượt quá 500MB`);
     return;
   }
   validFiles.push(file);
@@ -181,7 +181,7 @@ Form gồm 3 trường:
 Validation client-side (cùng logic với chat-input):
 
 - `ACCEPTED_EXTS = Set(["pdf","docx","doc","txt","xlsx","xls"])`
-- `MAX_FILE_SIZE = 5 * 1024 * 1024` (5MB)
+- `MAX_FILE_SIZE = 100 * 1024 * 1024` (5MB)
 
 ---
 
@@ -217,8 +217,8 @@ export interface Document {
 
 ```python
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls"}
-MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024   # 5 MB
-MAX_PAGE_COUNT = 10
+MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024   # 100 MB
+MAX_PAGE_COUNT = 300
 ```
 
 Hàm chính: `parse_document(file_path) → { document_text, document_metadata }`

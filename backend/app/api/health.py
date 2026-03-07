@@ -52,8 +52,11 @@ def rate_limit():
       200:
         description: Rate-limit info including key validity and quota status
     """
+    from app.services.key_manager import get_current_key_info
+
     key_info = validate_api_key()
     status = get_rate_limit_status()
     status["key_valid"] = key_info["valid"]
     status["key_error"] = key_info["error"]
+    status["current_key"] = get_current_key_info()
     return jsonify(status)

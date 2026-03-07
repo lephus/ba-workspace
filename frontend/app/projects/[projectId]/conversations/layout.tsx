@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ChevronRight, FolderOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "next-intl";
+import { ApiKeyManager } from "@/features/settings/components";
 
 export default function ConversationsLayout({
   children,
@@ -40,6 +41,9 @@ export default function ConversationsLayout({
             <span className="truncate">{project?.name ?? `${tp("title")} #${projectId}`}</span>
           </div>
         )}
+        <div className="ml-auto">
+          <ApiKeyManager />
+        </div>
       </div>
 
       {/* Main content */}
@@ -49,9 +53,7 @@ export default function ConversationsLayout({
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <main className="flex-1 flex flex-col min-w-0 h-full">
-          {children}
-        </main>
+        <main className="flex-1 flex flex-col min-w-0 h-full">{children}</main>
       </div>
     </div>
   );

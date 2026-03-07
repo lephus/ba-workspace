@@ -77,9 +77,8 @@ export function ConversationSidebar({
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
 
-  const handleCreate = () => {
-    setSelectedConversation(null);
-    setDialogOpen(true);
+  const handleNewChat = () => {
+    router.push(`/projects/${projectId}/conversations`);
   };
 
   const handleEdit = (e: React.MouseEvent, conversation: Conversation) => {
@@ -105,9 +104,8 @@ export function ConversationSidebar({
     });
   };
 
-  const handleConversationCreated = (conversation: Conversation) => {
+  const handleConversationUpdated = (_conversation: Conversation) => {
     setDialogOpen(false);
-    router.push(`/projects/${projectId}/conversations/${conversation.id}`);
   };
 
   const handleConversationDeleted = () => {
@@ -196,7 +194,7 @@ export function ConversationSidebar({
                   variant="ghost"
                   size="icon"
                   className="size-8"
-                  onClick={handleCreate}
+                  onClick={handleNewChat}
                 >
                   <Plus className="size-4" />
                 </Button>
@@ -241,7 +239,7 @@ export function ConversationSidebar({
 
         {/* Conversation list */}
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-2 space-y-1">
+          <div className="p-2 space-y-1 overflow-hidden">
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-2">
@@ -259,7 +257,7 @@ export function ConversationSidebar({
                   variant="outline"
                   size="sm"
                   className="mt-3"
-                  onClick={handleCreate}
+                  onClick={handleNewChat}
                 >
                   <Plus className="size-3" />
                   {t('createNew')}
@@ -280,12 +278,12 @@ export function ConversationSidebar({
                           key={conversation.id}
                           href={`/projects/${projectId}/conversations/${conversation.id}`}
                           className={cn(
-                            "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
+                            "group relative flex items-center gap-2 rounded-lg px-3 py-2 pr-8 text-sm transition-colors hover:bg-accent min-w-0",
                             isActive && "bg-accent",
                           )}
                         >
                           <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="flex-1 truncate">
+                          <span className="flex-1 min-w-0 truncate">
                             {conversation.title}
                           </span>
                           <DropdownMenu>
@@ -294,7 +292,7 @@ export function ConversationSidebar({
                                 variant="ghost"
                                 size="icon"
                                 className={cn(
-                                  "size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                                  "absolute right-1 top-1/2 -translate-y-1/2 size-6 opacity-0 group-hover:opacity-100 transition-opacity",
                                   isActive && "opacity-100",
                                 )}
                                 onClick={(e) => e.preventDefault()}
@@ -354,12 +352,12 @@ export function ConversationSidebar({
                       key={conversation.id}
                       href={`/projects/${projectId}/conversations/${conversation.id}`}
                       className={cn(
-                        "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
+                        "group relative flex items-center gap-2 rounded-lg px-3 py-2 pr-8 text-sm transition-colors hover:bg-accent min-w-0",
                         isActive && "bg-accent",
                       )}
                     >
                       <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 truncate">
+                      <span className="flex-1 min-w-0 truncate">
                         {conversation.title}
                       </span>
                       <DropdownMenu>
@@ -368,7 +366,7 @@ export function ConversationSidebar({
                             variant="ghost"
                             size="icon"
                             className={cn(
-                              "size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                              "absolute right-1 top-1/2 -translate-y-1/2 size-6 opacity-0 group-hover:opacity-100 transition-opacity",
                               isActive && "opacity-100",
                             )}
                             onClick={(e) => e.preventDefault()}
@@ -475,7 +473,7 @@ export function ConversationSidebar({
         onOpenChange={setDialogOpen}
         projectId={projectId}
         conversation={selectedConversation}
-        onSuccess={handleConversationCreated}
+        onSuccess={handleConversationUpdated}
       />
 
       <DeleteConversationDialog

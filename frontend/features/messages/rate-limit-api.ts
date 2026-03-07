@@ -28,6 +28,13 @@ export interface RateLimitStatus {
   key_valid: boolean | null;
   key_error: string | null;
   last_error: RateLimitError | null;
+  // Currently active key info
+  current_key: {
+    key_masked: string;
+    source: "env" | "ui";
+    id: number | null;
+    label: string | null;
+  } | null;
 }
 
 const API_URL = APP_CONFIG.API_URL;
