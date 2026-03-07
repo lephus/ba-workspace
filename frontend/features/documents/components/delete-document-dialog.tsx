@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +27,8 @@ export function DeleteDocumentDialog({
   document,
   projectId,
 }: DeleteDocumentDialogProps) {
+  const t = useTranslations('documents');
+  const tc = useTranslations('common');
   const deleteDocument = useDeleteDocument(projectId);
 
   const handleDelete = () => {
@@ -41,23 +44,21 @@ export function DeleteDocumentDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Xóa tài liệu</AlertDialogTitle>
+          <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Bạn có chắc chắn muốn xóa tài liệu{" "}
-            <strong>&ldquo;{document?.filename}&rdquo;</strong>? Hành động này
-            không thể hoàn tác.
+            {t('deleteConfirm', { name: document?.filename ?? '' })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleteDocument.isPending}>
-            Hủy
+            {tc('cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteDocument.isPending}
             variant="destructive"
           >
-            {deleteDocument.isPending ? "Đang xóa..." : "Xóa"}
+            {deleteDocument.isPending ? tc('deleting') : tc('delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

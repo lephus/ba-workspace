@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Plus,
   MessageSquare,
@@ -55,6 +56,8 @@ export function ConversationSidebar({
 }: ConversationSidebarProps) {
   const router = useRouter();
   const params = useParams();
+  const t = useTranslations('conversations');
+  const ts = useTranslations('conversations.sidebar');
   const activeConversationId = params.conversationId
     ? Number(params.conversationId)
     : null;
@@ -106,24 +109,19 @@ export function ConversationSidebar({
   };
 
   const handleConversationDeleted = () => {
-    // If the deleted conversation was the active one, navigate back to the list
     if (selectedConversation?.id === activeConversationId) {
       router.push(`/projects/${projectId}/conversations`);
     }
   };
 
-  /* ---- Find the currently active conversation object ---- */
   const activeConversation =
     conversations?.find((c) => c.id === activeConversationId) ?? null;
 
-  /* ---- F1 = Pin/Unpin · F2 = Rename · F3 = Delete (active conversation) ---- */
   const handleGlobalKeyDown = useCallback(
     (e: globalThis.KeyboardEvent) => {
-      // Only act when we have an active conversation and no dialog is open
       if (!activeConversation) return;
       if (dialogOpen || deleteDialogOpen) return;
 
-      // Ignore if user is typing in an input/textarea
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
@@ -135,7 +133,7 @@ export function ConversationSidebar({
             pinned: !activeConversation.pinned,
           });
           toast.success(
-            activeConversation.pinned ? "Đã bỏ ghim" : "Đã ghim cuộc hội thoại",
+            activeConversation.pinned ? ts('pinnedUnpinned') : ts('pinnedDone'),
           );
           break;
         }
@@ -153,7 +151,7 @@ export function ConversationSidebar({
         }
       }
     },
-    [activeConversation, dialogOpen, deleteDialogOpen, togglePin],
+    [activeConversation, dialogOpen, deleteDialogOpen, togglePin, ts],
   );
 
   useEffect(() => {
@@ -185,9 +183,9 @@ export function ConversationSidebar({
                   </Link>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Quay lại dự án</TooltipContent>
+              <TooltipContent side="right">{ts('backToProjects')}</TooltipContent>
             </Tooltip>
-            <h2 className="font-semibold text-sm truncate">Cuộc hội thoại</h2>
+            <h2 className="font-semibold text-sm truncate">{t('title')}</h2>
           </div>
           <div className="flex items-center gap-1">
             <Tooltip>
@@ -201,7 +199,7 @@ export function ConversationSidebar({
                   <Plus className="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Chat mới</TooltipContent>
+              <TooltipContent>{ts('newConversation')}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -220,7 +218,7 @@ export function ConversationSidebar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                Tài liệu{documentCount > 0 ? ` (${documentCount})` : ""}
+                {ts('documents')}{documentCount > 0 ? ` (${documentCount})` : ""}
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -234,7 +232,7 @@ export function ConversationSidebar({
                   <PanelLeftClose className="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Thu gọn sidebar</TooltipContent>
+              <TooltipContent>{ts('collapseMenu')}</TooltipContent>
             </Tooltip>
           </div>
         </div>
@@ -253,7 +251,7 @@ export function ConversationSidebar({
               <div className="px-3 py-8 text-center">
                 <MessageSquare className="size-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-xs text-muted-foreground">
-                  Chưa có cuộc hội thoại nào
+                  {t('empty.title')}
                 </p>
                 <Button
                   variant="outline"
@@ -262,7 +260,7 @@ export function ConversationSidebar({
                   onClick={handleNewChat}
                 >
                   <Plus className="size-3" />
-                  Chat mới
+                  {t('createNew')}
                 </Button>
               </div>
             ) : (
@@ -271,7 +269,7 @@ export function ConversationSidebar({
                   <>
                     <p className="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
                       <Pin className="size-3" />
-                      Đã ghim
+                      {t('pinned')}
                     </p>
                     {pinnedConversations.map((conversation) => {
                       const isActive = conversation.id === activeConversationId;
@@ -307,7 +305,7 @@ export function ConversationSidebar({
                                 onClick={(e) => handlePin(e, conversation)}
                               >
                                 <PinOff className="size-4" />
-                                <span className="flex-1">Bỏ ghim</span>
+                                <span className="flex-1">{t('unpin')}</span>
                                 {isActive && (
                                   <kbd className="ml-auto text-[10px] text-muted-foreground">
                                     F1
@@ -318,7 +316,7 @@ export function ConversationSidebar({
                                 onClick={(e) => handleEdit(e, conversation)}
                               >
                                 <Pencil className="size-4" />
-                                <span className="flex-1">Đổi tên</span>
+                                <span className="flex-1">{t('rename')}</span>
                                 {isActive && (
                                   <kbd className="ml-auto text-[10px] text-muted-foreground">
                                     F2
@@ -330,7 +328,7 @@ export function ConversationSidebar({
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="size-4" />
-                                <span className="flex-1">Xóa</span>
+                                <span className="flex-1">{t('deleteTitle').replace('Xóa ', '').replace('Delete ', '')}</span>
                                 {isActive && (
                                   <kbd className="ml-auto text-[10px] text-muted-foreground">
                                     F3
@@ -381,7 +379,7 @@ export function ConversationSidebar({
                             onClick={(e) => handlePin(e, conversation)}
                           >
                             <Pin className="size-4" />
-                            <span className="flex-1">Ghim</span>
+                            <span className="flex-1">{t('pin')}</span>
                             {isActive && (
                               <kbd className="ml-auto text-[10px] text-muted-foreground">
                                 F1
@@ -392,7 +390,7 @@ export function ConversationSidebar({
                             onClick={(e) => handleEdit(e, conversation)}
                           >
                             <Pencil className="size-4" />
-                            <span className="flex-1">Đổi tên</span>
+                            <span className="flex-1">{t('rename')}</span>
                             {isActive && (
                               <kbd className="ml-auto text-[10px] text-muted-foreground">
                                 F2
@@ -404,7 +402,7 @@ export function ConversationSidebar({
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="size-4" />
-                            <span className="flex-1">Xóa</span>
+                            <span className="flex-1">{t('deleteTitle').replace('Xóa ', '').replace('Delete ', '')}</span>
                             {isActive && (
                               <kbd className="ml-auto text-[10px] text-muted-foreground">
                                 F3
@@ -425,26 +423,26 @@ export function ConversationSidebar({
         {activeConversation && (
           <div className="shrink-0 border-t px-3 py-2">
             <p className="text-[10px] text-muted-foreground font-medium mb-1">
-              Phím tắt
+              {ts('shortcuts')}
             </p>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
               <span>
                 <kbd className="rounded border bg-muted px-1 py-0.5 font-mono">
                   F1
                 </kbd>{" "}
-                Ghim
+                {t('pin')}
               </span>
               <span>
                 <kbd className="rounded border bg-muted px-1 py-0.5 font-mono">
                   F2
                 </kbd>{" "}
-                Đổi tên
+                {t('rename')}
               </span>
               <span>
                 <kbd className="rounded border bg-muted px-1 py-0.5 font-mono">
                   F3
                 </kbd>{" "}
-                Xóa
+                {t('deleteTitle').replace('Xóa ', '').replace('Delete ', '')}
               </span>
             </div>
           </div>
@@ -465,7 +463,7 @@ export function ConversationSidebar({
                 <PanelLeft className="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Mở sidebar</TooltipContent>
+            <TooltipContent side="right">{ts('expandMenu')}</TooltipContent>
           </Tooltip>
         </div>
       )}

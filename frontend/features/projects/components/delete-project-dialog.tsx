@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,8 @@ export function DeleteProjectDialog({
   onOpenChange,
   project,
 }: DeleteProjectDialogProps) {
+  const t = useTranslations('projects');
+  const tc = useTranslations('common');
   const deleteProject = useDeleteProject();
 
   const handleDelete = () => {
@@ -39,23 +42,21 @@ export function DeleteProjectDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Xóa dự án</AlertDialogTitle>
+          <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Bạn có chắc chắn muốn xóa dự án{" "}
-            <strong>&ldquo;{project?.name}&rdquo;</strong>? Hành động này không
-            thể hoàn tác.
+            {t('deleteConfirm', { name: project?.name ?? '' })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleteProject.isPending}>
-            Hủy
+            {tc('cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteProject.isPending}
             variant="destructive"
           >
-            {deleteProject.isPending ? "Đang xóa..." : "Xóa"}
+            {deleteProject.isPending ? tc('deleting') : tc('delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

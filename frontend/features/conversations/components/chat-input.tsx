@@ -33,6 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /* ------------------------------------------------------------------ */
 /*  Agents (reusable list for @ mention)                              */
@@ -121,6 +122,7 @@ export function ChatInput({
   disabled,
   autoFocus = false,
 }: ChatInputProps) {
+  const t = useTranslations('chatInput');
   const [value, setValue] = useState("");
   const [selectedExistingIds, setSelectedExistingIds] = useState<number[]>([]);
   const [selectedNewFiles, setSelectedNewFiles] = useState<File[]>([]);
@@ -167,20 +169,20 @@ export function ChatInput({
   const SLASH_COMMANDS: SlashCommand[] = [
     {
       id: "attach-existing",
-      label: "File đã upload",
-      description: `Chọn từ ${existingDocuments.length} file đã có`,
+      label: t('attachExisting'),
+      description: t('attachExistingDesc', { count: existingDocuments.length }),
       icon: <FileText className="size-4 text-muted-foreground" />,
     },
     {
       id: "upload-new",
-      label: "Upload file mới",
-      description: "Tải lên file từ máy tính",
+      label: t('uploadNew'),
+      description: t('uploadNewDesc'),
       icon: <Upload className="size-4 text-muted-foreground" />,
     },
     {
       id: "mention-agent",
-      label: "Tag tác nhân",
-      description: "Nhắc đến một AI agent (@)",
+      label: t('mentionAgent'),
+      description: t('mentionAgentDesc'),
       icon: <Users className="size-4 text-muted-foreground" />,
     },
   ];
@@ -251,11 +253,12 @@ export function ChatInput({
       switch (cmd.id) {
         case "attach-existing":
           if (existingDocuments.length === 0) {
-            toast.info("Chưa có file nào được upload");
+            toast.info(t('noFilesUploaded'));
           } else if (existingDocuments.length === 1) {
             // Auto-select the only file
             toggleExistingDocument(existingDocuments[0].id, true);
-            toast.success(`Đã chọn "${existingDocuments[0].filename}"`);
+            toast.success(t('fileSelected', { name: existingDocuments[0].filename }));
+
           } else {
             // Show file picker popup
             setFilePickerIndex(0);
@@ -577,12 +580,12 @@ export function ChatInput({
       const ext = "." + (file.name.split(".").pop() ?? "").toLowerCase();
       if (!ACCEPTED.has(ext)) {
         toast.error(
-          `"${file.name}" — định dạng không hỗ trợ. Chỉ chấp nhận: txt, doc, docx, pdf, xlsx, xls`,
+          t('errorFormat', { name: file.name }),
         );
         return;
       }
       if (file.size > MAX_BYTES) {
-        toast.error(`"${file.name}" — vượt quá 500MB`);
+        toast.error(t('errorSize', { name: file.name }));
         return;
       }
       validFiles.push(file);
@@ -673,7 +676,7 @@ export function ChatInput({
               className="absolute bottom-full left-0 z-50 mb-2 w-72 rounded-lg border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95"
             >
               <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                Lệnh nhanh
+                {t('slashCommands')}
               </p>
               {SLASH_COMMANDS.map((cmd, i) => (
                 <button
@@ -699,7 +702,7 @@ export function ChatInput({
               ))}
               <div className="mt-1 border-t px-2 py-1.5">
                 <p className="text-[10px] text-muted-foreground">
-                  ↑↓ để chọn · Enter để xác nhận · Esc để đóng
+                  {t('navHint')}
                 </p>
               </div>
             </div>
@@ -712,7 +715,7 @@ export function ChatInput({
               className="absolute bottom-full left-0 z-50 mb-2 w-72 rounded-lg border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95"
             >
               <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                Chọn tác nhân AI
+                {t('selectAgent')}
               </p>
               {filteredAgents.length > 0 ? (
                 filteredAgents.map((agent, i) => (
@@ -744,12 +747,12 @@ export function ChatInput({
                 ))
               ) : (
                 <p className="px-2 py-3 text-center text-xs text-muted-foreground">
-                  Không tìm thấy tác nhân
+                  {t('noAgentFound')}
                 </p>
               )}
               <div className="mt-1 border-t px-2 py-1.5">
                 <p className="text-[10px] text-muted-foreground">
-                  ↑↓ để chọn · Enter để xác nhận · Esc để đóng
+                  {t('navHint')}
                 </p>
               </div>
             </div>
@@ -764,7 +767,7 @@ export function ChatInput({
                 className="absolute bottom-full left-0 z-50 mb-2 w-80 rounded-lg border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95"
               >
                 <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  Chọn file đã upload
+                  {t('selectFile')}
                 </p>
                 {uploadingFiles.map((uf) => (
                   <div
@@ -776,7 +779,7 @@ export function ChatInput({
                       {uf.file.name}
                     </span>
                     <span className="shrink-0 text-[10px] text-muted-foreground">
-                      Đang tải…
+                      {t('uploading')}
                     </span>
                   </div>
                 ))}
@@ -808,7 +811,7 @@ export function ChatInput({
                 })}
                 <div className="mt-1 border-t px-2 py-1.5">
                   <p className="text-[10px] text-muted-foreground">
-                    ↑↓ để chọn · Enter để xác nhận · Esc để đóng
+                    {t('navHint')}
                   </p>
                 </div>
               </div>
@@ -820,78 +823,78 @@ export function ChatInput({
               selectedNewFiles.length > 0 ||
               uploadingFiles.length > 0 ||
               mentionedAgentItems.length > 0) && (
-              <div className="col-span-3 flex flex-wrap gap-1 px-1 pb-1">
-                {selectedExistingDocuments.map((document) => (
-                  <div
-                    key={`existing-${document.id}`}
-                    className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted/50 px-2 py-1 text-xs"
-                  >
-                    <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="max-w-40 truncate">
-                      {document.filename}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => toggleExistingDocument(document.id, false)}
-                      className="inline-flex items-center"
-                      aria-label={`Bỏ chọn ${document.filename}`}
+                <div className="col-span-3 flex flex-wrap gap-1 px-1 pb-1">
+                  {selectedExistingDocuments.map((document) => (
+                    <div
+                      key={`existing-${document.id}`}
+                      className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted/50 px-2 py-1 text-xs"
                     >
-                      <X className="size-3.5 text-muted-foreground" />
-                    </button>
-                  </div>
-                ))}
-                {selectedNewFiles.map((file) => (
-                  <div
-                    key={`new-${file.name}-${file.size}-${file.lastModified}`}
-                    className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted/50 px-2 py-1 text-xs"
-                  >
-                    <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="max-w-40 truncate">{file.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeSelectedNewFile(file)}
-                      className="inline-flex items-center"
-                      aria-label={`Bỏ chọn ${file.name}`}
+                      <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="max-w-40 truncate">
+                        {document.filename}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleExistingDocument(document.id, false)}
+                        className="inline-flex items-center"
+                        aria-label={`Bỏ chọn ${document.filename}`}
+                      >
+                        <X className="size-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ))}
+                  {selectedNewFiles.map((file) => (
+                    <div
+                      key={`new-${file.name}-${file.size}-${file.lastModified}`}
+                      className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted/50 px-2 py-1 text-xs"
                     >
-                      <X className="size-3.5 text-muted-foreground" />
-                    </button>
-                  </div>
-                ))}
-                {uploadingFiles.map((uf) => (
-                  <div
-                    key={uf.tempId}
-                    className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-xs"
-                  >
-                    <Loader2 className="size-3.5 shrink-0 text-primary animate-spin" />
-                    <span className="max-w-40 truncate text-muted-foreground">
-                      {uf.file.name}
-                    </span>
-                  </div>
-                ))}
-                {mentionedAgentItems.map((agent) => (
-                  <div
-                    key={`agent-${agent.id}`}
-                    className="inline-flex max-w-full items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs"
-                  >
-                    <Avatar className="size-4">
-                      <AvatarImage src={agent.avatar} alt={agent.name} />
-                      <AvatarFallback className="text-[8px]">
-                        {agent.name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{agent.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeMentionedAgent(agent.id)}
-                      className="inline-flex items-center"
-                      aria-label={`Bỏ tag ${agent.name}`}
+                      <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="max-w-40 truncate">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedNewFile(file)}
+                        className="inline-flex items-center"
+                        aria-label={`Bỏ chọn ${file.name}`}
+                      >
+                        <X className="size-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ))}
+                  {uploadingFiles.map((uf) => (
+                    <div
+                      key={uf.tempId}
+                      className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2 py-1 text-xs"
                     >
-                      <X className="size-3.5 text-muted-foreground" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <Loader2 className="size-3.5 shrink-0 text-primary animate-spin" />
+                      <span className="max-w-40 truncate text-muted-foreground">
+                        {uf.file.name}
+                      </span>
+                    </div>
+                  ))}
+                  {mentionedAgentItems.map((agent) => (
+                    <div
+                      key={`agent-${agent.id}`}
+                      className="inline-flex max-w-full items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs"
+                    >
+                      <Avatar className="size-4">
+                        <AvatarImage src={agent.avatar} alt={agent.name} />
+                        <AvatarFallback className="text-[8px]">
+                          {agent.name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{agent.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeMentionedAgent(agent.id)}
+                        className="inline-flex items-center"
+                        aria-label={`Bỏ tag ${agent.name}`}
+                      >
+                        <X className="size-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -972,8 +975,8 @@ export function ChatInput({
               onChange={handleChange}
               onKeyDown={handleKeyDown}
               onInput={handleInput}
-              placeholder='Nhập tin nhắn — gõ "/" cho lệnh nhanh, "@" để tag tác nhân'
-              disabled={disabled}
+              placeholder={t('placeholder')}
+              disabled={isLoading || disabled}
               className="min-h-10 max-h-50 resize-none border-0 bg-transparent px-2 pt-2.5 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               rows={1}
             />
@@ -994,15 +997,7 @@ export function ChatInput({
             </div>
           </div>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Enter gửi · Shift+Enter xuống dòng ·{" "}
-            <kbd className="rounded border bg-muted px-1 py-0.5 text-[10px]">
-              /
-            </kbd>{" "}
-            lệnh nhanh ·{" "}
-            <kbd className="rounded border bg-muted px-1 py-0.5 text-[10px]">
-              @
-            </kbd>{" "}
-            tag tác nhân
+            {t('placeholder')}
           </p>
         </div>
       </div>

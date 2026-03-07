@@ -32,6 +32,7 @@ import { ChatInput } from "./chat-input";
 import { AgentPanel } from "./agent-panel";
 import { RateLimitIndicator } from "@/features/messages/components/rate-limit-indicator";
 import { ChatToc } from "./chat-toc";
+import { useTranslations } from "next-intl";
 
 interface ChatAreaProps {
   projectId: number;
@@ -67,6 +68,7 @@ function ChatSkeleton() {
 }
 
 export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
+  const t = useTranslations('conversations.chat');
   const {
     data,
     isLoading: messagesLoading,
@@ -301,7 +303,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
           <MessageSquare className="size-5 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-sm truncate">
-              {conversation?.title || "Cuộc hội thoại"}
+              {conversation?.title || t('defaultTitle')}
             </h2>
           </div>
           <RateLimitIndicator />
@@ -323,7 +325,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Tin nhắn đã ghim</TooltipContent>
+              <TooltipContent>{t('pinnedMessages')}</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -354,7 +356,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
                         <X className="size-3 text-muted-foreground" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="left">Bỏ ghim</TooltipContent>
+                    <TooltipContent side="left">{t('unpin')}</TooltipContent>
                   </Tooltip>
                 </div>
               ))}
@@ -379,7 +381,7 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
           ) : isError ? (
             <div className="flex items-center justify-center h-full py-12">
               <p className="text-destructive text-sm">
-                {error?.message || "Đã xảy ra lỗi khi tải tin nhắn."}
+                {error?.message || t('errorMessages')}
               </p>
             </div>
           ) : !messages || messages.length === 0 ? (
@@ -387,9 +389,9 @@ export function ChatArea({ projectId, conversationId }: ChatAreaProps) {
               <div className="bg-muted mb-4 flex size-16 items-center justify-center rounded-full">
                 <MessageSquare className="text-muted-foreground size-8" />
               </div>
-              <h3 className="text-lg font-semibold">Bắt đầu cuộc hội thoại</h3>
+              <h3 className="text-lg font-semibold">{t('startChat')}</h3>
               <p className="text-muted-foreground mt-2 max-w-sm text-sm">
-                Hãy gửi tin nhắn đầu tiên để bắt đầu phân tích nghiệp vụ.
+                {t('startChatDesc')}
               </p>
             </div>
           ) : (

@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -42,6 +43,8 @@ export const MessageBubble = memo(
     const isUser = message.role === "user";
     const isSystem = message.role === "system";
     const [copied, setCopied] = useState(false);
+    const tc = useTranslations('common');
+    const t = useTranslations('conversations.chat');
 
     if (isSystem) {
       return (
@@ -60,6 +63,7 @@ export const MessageBubble = memo(
     };
 
     return (
+
       <div
         className={cn(
           "group/message flex gap-3 py-4",
@@ -194,40 +198,40 @@ export const MessageBubble = memo(
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                {copied ? "Đã sao chép" : "Sao chép"}
+                {copied ? tc('copied') : tc('copy')}
               </TooltipContent>
             </Tooltip>
             {isPinned
               ? onUnpin && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-6"
-                        onClick={() => onUnpin(message.id)}
-                      >
-                        <PinOff className="size-3 text-amber-500" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Bỏ ghim</TooltipContent>
-                  </Tooltip>
-                )
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6"
+                      onClick={() => onUnpin(message.id)}
+                    >
+                      <PinOff className="size-3 text-amber-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t('unpin')}</TooltipContent>
+                </Tooltip>
+              )
               : onPin && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-6"
-                        onClick={() => onPin(message.id)}
-                      >
-                        <Pin className="size-3 text-muted-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Ghim</TooltipContent>
-                  </Tooltip>
-                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6"
+                      onClick={() => onPin(message.id)}
+                    >
+                      <Pin className="size-3 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{tc('pin')}</TooltipContent>
+                </Tooltip>
+              )}
           </div>
         </div>
       </div>

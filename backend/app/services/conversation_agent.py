@@ -1,6 +1,7 @@
 """Conversation agent: BA chat with history; router selects agent(s), multiple agents may collaborate."""
 import logging
 from pathlib import Path
+from typing import Optional
 
 from app.agents.base import get_agent_bot_info
 from app.models import Message, Conversation
@@ -86,7 +87,7 @@ def _build_multi_agent_system_prompt(selected_agents: list[dict]) -> str:
     return "\n".join(parts)
 
 
-def get_conversation_bot(primary_agent_id: str | None = None) -> dict:
+def get_conversation_bot(primary_agent_id: Optional[str] = None) -> dict:
     """
     Return bot info { name, avatar, role }.
     If primary_agent_id is in conversation-agents config, use it; else fallback to get_agent_bot_info (alex).

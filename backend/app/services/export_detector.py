@@ -4,6 +4,7 @@ Also detects which BA template type the user wants (BRD, FRD, Backlog, Charter).
 Used by messages API to add export_requested with download_url when applicable.
 """
 import re
+from typing import Optional
 
 # Map keywords to format (lowercase). Order matters: more specific first.
 FORMAT_PATTERNS = [
@@ -43,7 +44,7 @@ TEMPLATE_PATTERNS = [
 ]
 
 
-def detect_export_format(user_content: str) -> str | None:
+def detect_export_format(user_content: str) -> Optional[str]:
     """
     If user message indicates they want to export and specified a format, return that format.
     Otherwise return None. user_content should be plain text (normalized).

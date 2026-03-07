@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,7 @@ import type { Project } from "@/features/projects/types";
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  project?: Project | null; // null = create mode, Project = edit mode
+  project?: Project | null;
 }
 
 export function ProjectDialog({
@@ -33,6 +34,8 @@ export function ProjectDialog({
   onOpenChange,
   project,
 }: ProjectDialogProps) {
+  const t = useTranslations('projects');
+  const tc = useTranslations('common');
   const isEditing = !!project;
 
   const {
@@ -52,7 +55,6 @@ export function ProjectDialog({
 
   const isLoading = createProject.isPending || updateProject.isPending;
 
-  // Reset form when dialog opens/closes or project changes
   useEffect(() => {
     if (open) {
       reset({ name: project?.name || "" });
@@ -83,20 +85,18 @@ export function ProjectDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Chỉnh sửa dự án" : "Tạo dự án mới"}
+            {isEditing ? t('editTitle') : t('createTitle')}
           </DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? "Cập nhật thông tin dự án của bạn."
-              : "Nhập tên để tạo dự án mới."}
+            {isEditing ? t('editDescription') : t('createDescription')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Field>
-            <FieldLabel htmlFor="project-name">Tên dự án</FieldLabel>
+            <FieldLabel htmlFor="project-name">{t('projectName')}</FieldLabel>
             <Input
               id="project-name"
-              placeholder="Nhập tên dự án..."
+              placeholder={t('projectNamePlaceholder')}
               {...register("name")}
               aria-invalid={!!errors.name}
             />
@@ -113,16 +113,16 @@ export function ProjectDialog({
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Hủy
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading
                 ? isEditing
-                  ? "Đang cập nhật..."
-                  : "Đang tạo..."
+                  ? tc('updating')
+                  : tc('creating')
                 : isEditing
-                  ? "Cập nhật"
-                  : "Tạo dự án"}
+                  ? tc('update')
+                  : t('createProject')}
             </Button>
           </DialogFooter>
         </form>

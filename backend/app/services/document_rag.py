@@ -11,6 +11,7 @@ After a document is uploaded, this service:
 import json
 import logging
 from datetime import datetime
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ Limit keywords to 10. Limit important_points to 5.
 """
 
 
-def process_document(document_id: int) -> dict | None:
+def process_document(document_id: int) -> Optional[dict]:
     """
     Run the RAG pipeline for a document: parse → Gemini extract → persist to DB.
     Returns the extracted dict on success, None on failure.

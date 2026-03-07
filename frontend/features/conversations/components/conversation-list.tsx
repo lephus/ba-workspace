@@ -12,6 +12,7 @@ import {
   PinOff,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -58,18 +59,19 @@ function ConversationTableSkeleton() {
 }
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  const t = useTranslations('conversations');
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="bg-muted mb-4 flex size-12 items-center justify-center rounded-full">
         <MessageSquare className="text-muted-foreground size-6" />
       </div>
-      <h3 className="text-lg font-semibold">Chưa có cuộc hội thoại nào</h3>
+      <h3 className="text-lg font-semibold">{t('empty.title')}</h3>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-        Bắt đầu bằng cách tạo cuộc hội thoại đầu tiên.
+        {t('empty.description')}
       </p>
       <Button className="mt-4" onClick={onCreateClick}>
         <Plus className="size-4" />
-        Tạo cuộc hội thoại
+        {t('create')}
       </Button>
     </div>
   );
@@ -84,6 +86,9 @@ export function ConversationList({
   projectId,
   projectName,
 }: ConversationListProps) {
+  const t = useTranslations('conversations');
+  const tc = useTranslations('common');
+
   const {
     data: conversations,
     isLoading,
@@ -95,10 +100,10 @@ export function ConversationList({
 
   const sortedConversations = conversations
     ? [...conversations].sort((a, b) => {
-        if (a.pinned && !b.pinned) return -1;
-        if (!a.pinned && b.pinned) return 1;
-        return 0;
-      })
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return 0;
+    })
     : undefined;
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -137,10 +142,10 @@ export function ConversationList({
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Cuộc hội thoại</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
           {projectName && (
             <p className="text-muted-foreground mt-1">
-              Dự án: {projectName}
+              {t('project')}: {projectName}
             </p>
           )}
         </div>
@@ -150,14 +155,14 @@ export function ConversationList({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Danh sách cuộc hội thoại</CardTitle>
+              <CardTitle>{t('list')}</CardTitle>
               <CardDescription>
-                Quản lý các cuộc hội thoại trong dự án.
+                {t('description')}
               </CardDescription>
             </div>
             <Button onClick={handleCreate}>
               <Plus className="size-4" />
-              Tạo cuộc hội thoại
+              {t('create')}
             </Button>
           </div>
         </CardHeader>
@@ -167,7 +172,7 @@ export function ConversationList({
           ) : isError ? (
             <div className="py-8 text-center">
               <p className="text-destructive">
-                {error?.message || "Đã xảy ra lỗi khi tải dữ liệu."}
+                {error?.message || tc('errorLoading')}
               </p>
             </div>
           ) : !sortedConversations || sortedConversations.length === 0 ? (
@@ -176,10 +181,10 @@ export function ConversationList({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">ID</TableHead>
-                  <TableHead>Tiêu đề</TableHead>
-                  <TableHead className="w-44">Ngày tạo</TableHead>
-                  <TableHead className="w-44">Cập nhật lần cuối</TableHead>
+                  <TableHead className="w-16">{tc('id')}</TableHead>
+                  <TableHead>{t('conversationTitle')}</TableHead>
+                  <TableHead className="w-44">{t('createdAt')}</TableHead>
+                  <TableHead className="w-44">{t('updatedAt')}</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -215,7 +220,7 @@ export function ConversationList({
                             className="size-8"
                           >
                             <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Mở menu</span>
+                            <span className="sr-only">{tc('openMenu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -225,12 +230,12 @@ export function ConversationList({
                             {conversation.pinned ? (
                               <>
                                 <PinOff className="size-4" />
-                                Bỏ ghim
+                                {t('unpin')}
                               </>
                             ) : (
                               <>
                                 <Pin className="size-4" />
-                                Ghim
+                                {t('pin')}
                               </>
                             )}
                           </DropdownMenuItem>
@@ -238,14 +243,14 @@ export function ConversationList({
                             onClick={() => handleEdit(conversation)}
                           >
                             <Pencil className="size-4" />
-                            Chỉnh sửa
+                            {tc('edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(conversation)}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="size-4" />
-                            Xóa
+                            {tc('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

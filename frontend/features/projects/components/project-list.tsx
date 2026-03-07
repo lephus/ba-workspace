@@ -10,6 +10,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -56,24 +57,27 @@ function ProjectTableSkeleton() {
 }
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  const t = useTranslations('projects');
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="bg-muted mb-4 flex size-12 items-center justify-center rounded-full">
         <FolderOpen className="text-muted-foreground size-6" />
       </div>
-      <h3 className="text-lg font-semibold">Chưa có dự án nào</h3>
+      <h3 className="text-lg font-semibold">{t('empty.title')}</h3>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-        Bắt đầu bằng cách tạo dự án đầu tiên của bạn.
+        {t('empty.description')}
       </p>
       <Button className="mt-4" onClick={onCreateClick}>
         <Plus className="size-4" />
-        Tạo dự án
+        {t('createProject')}
       </Button>
     </div>
   );
 }
 
 export function ProjectList() {
+  const t = useTranslations('projects');
+  const tc = useTranslations('common');
   const { data: projects, isLoading, isError, error } = useProjects();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -101,14 +105,14 @@ export function ProjectList() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Dự án</CardTitle>
+              <CardTitle>{t('title')}</CardTitle>
               <CardDescription>
-                Quản lý các dự án phân tích nghiệp vụ của bạn.
+                {t('description')}
               </CardDescription>
             </div>
             <Button onClick={handleCreate}>
               <Plus className="size-4" />
-              Tạo dự án
+              {t('createProject')}
             </Button>
           </div>
         </CardHeader>
@@ -118,7 +122,7 @@ export function ProjectList() {
           ) : isError ? (
             <div className="py-8 text-center">
               <p className="text-destructive">
-                {error?.message || "Đã xảy ra lỗi khi tải dữ liệu."}
+                {error?.message || tc('errorLoading')}
               </p>
             </div>
           ) : !projects || projects.length === 0 ? (
@@ -127,10 +131,10 @@ export function ProjectList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">ID</TableHead>
-                  <TableHead>Tên dự án</TableHead>
-                  <TableHead className="w-44">Ngày tạo</TableHead>
-                  <TableHead className="w-44">Cập nhật lần cuối</TableHead>
+                  <TableHead className="w-16">{tc('id')}</TableHead>
+                  <TableHead>{t('projectName')}</TableHead>
+                  <TableHead className="w-44">{t('createdAt')}</TableHead>
+                  <TableHead className="w-44">{t('updatedAt')}</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -159,32 +163,32 @@ export function ProjectList() {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8">
                             <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Mở menu</span>
+                            <span className="sr-only">{tc('openMenu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link href={`/projects/${project.id}/conversations`}>
                               <MessageSquare className="size-4" />
-                              Cuộc hội thoại
+                              {t('conversations')}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link href={`/projects/${project.id}/documents`}>
                               <FolderOpen className="size-4" />
-                              Tài liệu
+                              {t('documents')}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEdit(project)}>
                             <Pencil className="size-4" />
-                            Chỉnh sửa
+                            {tc('edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(project)}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="size-4" />
-                            Xóa
+                            {tc('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -8,6 +8,7 @@ import {
   AlignLeft,
   Clock,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +24,12 @@ import type { Document } from "@/features/documents/types";
 
 // Agent display map
 const AGENT_LABELS: Record<string, { label: string; color: string }> = {
-  emma: { label: "Emma – Yêu cầu", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
+  emma: { label: "Emma – Requirements", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
   sarah: { label: "Sarah – Stakeholder", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300" },
-  jack: { label: "Jack – Quy trình", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
-  david: { label: "David – Tuân thủ", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
+  jack: { label: "Jack – Process", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
+  david: { label: "David – Compliance", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
   paul: { label: "Paul – Traceability", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
-  alex: { label: "Alex – Điều phối", color: "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300" },
+  alex: { label: "Alex – Coordination", color: "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300" },
 };
 
 interface DocumentRagDialogProps {
@@ -42,6 +43,7 @@ export function DocumentRagDialog({
   onOpenChange,
   document: doc,
 }: DocumentRagDialogProps) {
+  const t = useTranslations('documents');
   if (!doc) return null;
 
   const isProcessed = !!doc.rag_processed_at;
@@ -56,9 +58,7 @@ export function DocumentRagDialog({
             {doc.filename}
           </DialogTitle>
           <DialogDescription>
-            {isProcessed
-              ? "Thông tin phân tích AI đã được xử lý thành công."
-              : "Tài liệu chưa được AI phân tích."}
+            {isProcessed ? t('processedSuccess') : t('notProcessedDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -71,7 +71,7 @@ export function DocumentRagDialog({
                 className={isProcessed ? "gap-1" : "gap-1 text-muted-foreground"}
               >
                 <Sparkles className="size-3" />
-                {isProcessed ? "Đã phân tích AI" : "Chưa phân tích"}
+                {isProcessed ? t('aiProcessed') : t('aiNotProcessed')}
               </Badge>
 
               {agentInfo && (
@@ -93,7 +93,7 @@ export function DocumentRagDialog({
 
             {!isProcessed && (
               <p className="text-sm text-muted-foreground italic">
-                Tài liệu này chưa có dữ liệu phân tích từ AI.
+                {t('noAiData')}
               </p>
             )}
 
@@ -104,7 +104,7 @@ export function DocumentRagDialog({
                 <div className="space-y-1.5">
                   <p className="text-sm font-semibold flex items-center gap-1.5">
                     <AlignLeft className="size-3.5 text-muted-foreground" />
-                    Tóm tắt
+                    {t('summary')}
                   </p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {doc.summary}
@@ -120,7 +120,7 @@ export function DocumentRagDialog({
                 <div className="space-y-1.5">
                   <p className="text-sm font-semibold flex items-center gap-1.5">
                     <Tag className="size-3.5 text-muted-foreground" />
-                    Từ khóa
+                    {t('keywords')}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {doc.keywords.map((kw) => (
@@ -140,7 +140,7 @@ export function DocumentRagDialog({
                 <div className="space-y-1.5">
                   <p className="text-sm font-semibold flex items-center gap-1.5">
                     <ListChecks className="size-3.5 text-muted-foreground" />
-                    Điểm quan trọng
+                    {t('importantPoints')}
                   </p>
                   <ul className="space-y-1.5">
                     {doc.important_points.map((pt, i) => (
@@ -159,7 +159,7 @@ export function DocumentRagDialog({
               <>
                 <Separator />
                 <div className="space-y-1.5">
-                  <p className="text-sm font-semibold">Ghi chú</p>
+                  <p className="text-sm font-semibold">{t('notes')}</p>
                   <p className="text-sm text-muted-foreground">{doc.notes}</p>
                 </div>
               </>

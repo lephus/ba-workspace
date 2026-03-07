@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Upload, X, FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,8 @@ export function UploadDocumentDialog({
   onOpenChange,
   projectId,
 }: UploadDocumentDialogProps) {
+  const t = useTranslations('documents');
+  const tc = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [aiTask, setAiTask] = useState("");
@@ -63,17 +66,15 @@ export function UploadDocumentDialog({
       return;
     }
 
-    // Validate file type
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (!ext || !ACCEPTED_EXTS.has(ext)) {
-      setFileError("Chỉ hỗ trợ định dạng: PDF, DOCX, DOC, TXT, XLSX, XLS");
+      setFileError(t('errorFormat'));
       setSelectedFile(null);
       return;
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      setFileError("Kích thước tệp tối đa là 5MB");
+      setFileError(t('errorSize'));
       setSelectedFile(null);
       return;
     }
@@ -93,7 +94,7 @@ export function UploadDocumentDialog({
     e.preventDefault();
 
     if (!selectedFile) {
-      setFileError("Vui lòng chọn tệp để tải lên");
+      setFileError(t('errorRequired'));
       return;
     }
 
@@ -121,25 +122,24 @@ export function UploadDocumentDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-125 overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Tải lên tài liệu</DialogTitle>
+          <DialogTitle>{t('uploadTitle')}</DialogTitle>
           <DialogDescription>
-            Tải lên tài liệu liên quan đến dự án. Hỗ trợ PDF, DOCX, DOC, TXT,
-            XLSX, XLS. Tối đa 5MB và 10 trang.
+            {t('uploadDesc')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 min-w-0">
           {/* File input */}
           <Field>
-            <FieldLabel>Tệp tài liệu *</FieldLabel>
+            <FieldLabel>{t('fileLabel')}</FieldLabel>
             {!selectedFile ? (
               <div
                 className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="size-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm font-medium">Nhấn để chọn tệp</p>
+                <p className="text-sm font-medium">{t('clickToSelect')}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  PDF, DOCX, DOC, TXT, Excel (tối đa 5MB • 10 trang)
+                  {t('fileFormats')}
                 </p>
               </div>
             ) : (
@@ -183,25 +183,25 @@ export function UploadDocumentDialog({
 
           {/* AI Task */}
           <Field>
-            <FieldLabel htmlFor="ai-task">Yêu cầu phân tích AI</FieldLabel>
+            <FieldLabel htmlFor="ai-task">{t('aiTask')}</FieldLabel>
             <Textarea
               id="ai-task"
-              placeholder="Mô tả yêu cầu phân tích cho AI (tuỳ chọn)..."
+              placeholder={t('aiTaskPlaceholder')}
               value={aiTask}
               onChange={(e) => setAiTask(e.target.value)}
               rows={2}
             />
             <FieldDescription>
-              AI sẽ sử dụng yêu cầu này để phân tích tài liệu.
+              {t('aiTaskDesc')}
             </FieldDescription>
           </Field>
 
           {/* Notes */}
           <Field>
-            <FieldLabel htmlFor="doc-notes">Ghi chú</FieldLabel>
+            <FieldLabel htmlFor="doc-notes">{t('notes')}</FieldLabel>
             <Textarea
               id="doc-notes"
-              placeholder="Ghi chú về tài liệu (tuỳ chọn)..."
+              placeholder={t('notesPlaceholder')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
@@ -215,18 +215,18 @@ export function UploadDocumentDialog({
               onClick={() => handleOpenChange(false)}
               disabled={uploadDocument.isPending}
             >
-              Hủy
+              {tc('cancel')}
             </Button>
             <Button
               type="submit"
               disabled={uploadDocument.isPending || !selectedFile}
             >
               {uploadDocument.isPending ? (
-                "Đang tải lên..."
+                tc('uploading')
               ) : (
                 <>
                   <Upload className="size-4" />
-                  Tải lên
+                  {t('upload')}
                 </>
               )}
             </Button>

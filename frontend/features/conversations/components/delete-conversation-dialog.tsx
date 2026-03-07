@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,8 @@ export function DeleteConversationDialog({
   conversation,
   onSuccess,
 }: DeleteConversationDialogProps) {
+  const t = useTranslations('conversations');
+  const tc = useTranslations('common');
   const deleteConversation = useDeleteConversation(projectId);
 
   const handleDelete = () => {
@@ -44,23 +47,21 @@ export function DeleteConversationDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Xóa cuộc hội thoại</AlertDialogTitle>
+          <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Bạn có chắc chắn muốn xóa cuộc hội thoại{" "}
-            <strong>&ldquo;{conversation?.title}&rdquo;</strong>? Hành động này
-            không thể hoàn tác.
+            {t('deleteConfirm', { title: conversation?.title ?? '' })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleteConversation.isPending}>
-            Hủy
+            {tc('cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteConversation.isPending}
             variant="destructive"
           >
-            {deleteConversation.isPending ? "Đang xóa..." : "Xóa"}
+            {deleteConversation.isPending ? tc('deleting') : tc('delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
