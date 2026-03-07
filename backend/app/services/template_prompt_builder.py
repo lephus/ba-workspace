@@ -8,6 +8,7 @@ Design principles:
   - Anti-hallucination rules baked into every prompt
 """
 import json
+from typing import Optional
 
 from app.models import Message
 from app.services.template_registry import (
@@ -91,7 +92,7 @@ For "text" sections: return a single string with paragraph content.
 {history_block}"""
 
 
-def parse_llm_json(raw_text: str) -> dict | None:
+def parse_llm_json(raw_text: str) -> Optional[dict]:
     """
     Parse the LLM response as JSON.  Handles common issues:
     - Markdown code fences (```json ... ```)

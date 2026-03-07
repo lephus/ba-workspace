@@ -116,7 +116,7 @@ def _agent_mention_patterns(agents: list[dict]) -> list[tuple[str, str]]:
     return result
 
 
-def _detect_mentioned_agent(user_message: str, agents: list[dict]) -> list[str] | None:
+def _detect_mentioned_agent(user_message: str, agents: list[dict]) -> Optional[list[str]]:
     """
     If the user explicitly mentions an agent by name or id (e.g. 'Emma', 'ask Emma', 'emma'),
     return that agent's id(s) so we route to them. Otherwise return None.

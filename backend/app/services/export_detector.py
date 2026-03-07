@@ -61,7 +61,7 @@ def detect_export_format(user_content: str) -> Optional[str]:
     return None
 
 
-def detect_template_type(user_content: str) -> str | None:
+def detect_template_type(user_content: str) -> Optional[str]:
     """
     Detect which BA template type the user wants to export.
     Returns one of: "brd", "frd", "backlog", "charter", or None.

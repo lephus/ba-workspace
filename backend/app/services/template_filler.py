@@ -8,6 +8,7 @@ and the validated JSON dict.
 import io
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from docx import Document
 from docx.table import Table
@@ -22,7 +23,7 @@ def _header_text(table: Table) -> str:
     return table.rows[0].cells[0].text.strip().upper()
 
 
-def _find_table(doc: Document, header_match: str, skip_first: int = 1) -> Table | None:
+def _find_table(doc: Document, header_match: str, skip_first: int = 1) -> Optional[Table]:
     """
     Find the table whose first row contains header_match (case-insensitive).
     Skips the first `skip_first` tables (typically the title table) to avoid

@@ -1,5 +1,6 @@
 """Gemini API client with multi-key rotation support."""
 import logging
+from typing import Optional
 from flask import current_app
 from app.services.rate_limiter import (
     record_request,
@@ -14,7 +15,7 @@ from app.services.rate_limiter import (
 logger = logging.getLogger(__name__)
 
 # Track the key that the current _genai / _gen_model were configured with
-_configured_key: str | None = None
+_configured_key: Optional[str] = None
 _gen_model = None
 _genai = None
 
@@ -35,7 +36,7 @@ def _get_active_key() -> str:
     return get_current_api_key()
 
 
-def _ensure_configured(force_key: str | None = None):
+def _ensure_configured(force_key: Optional[str] = None):
     """Configure genai with the current active key. Re-configures if key changed."""
     global _genai, _gen_model, _configured_key
     import google.generativeai as genai

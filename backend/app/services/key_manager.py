@@ -15,15 +15,16 @@ Provides:
 import logging
 import threading
 from datetime import datetime
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 _lock = threading.Lock()
 
 # In-memory state: which key is currently "active"
-_current_key: str | None = None
+_current_key: Optional[str] = None
 _failed_keys: set[str] = set()  # keys that failed in the current "round"
-_preferred_id: int | None = None  # DB key id of the preferred key
+_preferred_id: Optional[int] = None  # DB key id of the preferred key
 
 
 def _mask(key: str) -> str:
@@ -143,7 +144,7 @@ def mark_key_used(key: str) -> None:
         logger.debug("mark_key_used failed: %s", e)
 
 
-def get_current_key_info() -> dict | None:
+def get_current_key_info() -> Optional[dict]:
     """
     Return info about the currently active key for display in the UI.
     Returns {"key_masked": str, "source": "env"|"ui", "id": int|None, "label": str|None}

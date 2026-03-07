@@ -182,7 +182,7 @@ def build_document_context_block(document) -> str:
     return "\n".join(lines)
 
 
-def build_project_documents_context(project_id: int) -> str | None:
+def build_project_documents_context(project_id: int) -> Optional[str]:
     """
     Build a compact context block from ALL RAG-processed documents in the project.
     Uses pre-computed summaries/keywords/points so no extra Gemini calls are needed.
