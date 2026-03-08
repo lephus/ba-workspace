@@ -125,7 +125,12 @@ export function ApiKeyManager() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          data-tour="api-keys"
+        >
           <Key className="size-4" />
           <span className="hidden sm:inline">API Keys</span>
           {activeCount > 0 && (

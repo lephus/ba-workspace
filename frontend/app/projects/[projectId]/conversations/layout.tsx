@@ -9,6 +9,7 @@ import { ChevronRight, FolderOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "next-intl";
 import { ApiKeyManager } from "@/features/settings/components";
+import { ConversationTour } from "@/features/tour/conversations-tour";
 
 export default function ConversationsLayout({
   children,
@@ -38,10 +39,13 @@ export default function ConversationsLayout({
         ) : (
           <div className="flex items-center gap-1.5 font-medium truncate">
             <FolderOpen className="size-3.5 text-primary" />
-            <span className="truncate">{project?.name ?? `${tp("title")} #${projectId}`}</span>
+            <span className="truncate">
+              {project?.name ?? `${tp("title")} #${projectId}`}
+            </span>
           </div>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <ConversationTour />
           <ApiKeyManager />
         </div>
       </div>

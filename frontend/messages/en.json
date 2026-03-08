@@ -196,5 +196,33 @@
         "active": "active",
         "hide": "Hide",
         "details": "Details"
+    },
+    "tour": {
+        "projects": {
+            "restartTour": "Start guided tour",
+            "step1Title": "Welcome to BAWS \ud83d\udc4b",
+            "step1Desc": "This is your project dashboard. All your business analysis projects live here.",
+            "step2Title": "Create a Project",
+            "step2Desc": "Click here to start a new business analysis project. Give it a name and begin working.",
+            "step3Title": "Your Projects",
+            "step3Desc": "Each row is a project. Click the project name to open it and start analyzing.",
+            "step4Title": "Project Actions",
+            "step4Desc": "Use this menu to rename or delete a project.",
+            "step5Title": "API Keys",
+            "step5Desc": "Configure your AI provider keys here. BAWS uses them to power AI analysis."
+        },
+        "conversations": {
+            "restartTour": "Start guided tour",
+            "step6Title": "Conversations",
+            "step6Desc": "This sidebar lists all conversations in your project. Each conversation is a separate analysis session.",
+            "step7Title": "New Conversation",
+            "step7Desc": "Click here to create a new conversation and start chatting with AI agents.",
+            "step8Title": "Documents",
+            "step8Desc": "Upload project documents (PDF, DOCX, etc.) here. AI will use them as context for analysis.",
+            "step9Title": "Quick Actions",
+            "step9Desc": "Click one of these presets (e.g. 'Write User Stories') to quickly start a common BA task.",
+            "step10Title": "Start Analyzing",
+            "step10Desc": "Type your message here. Use / for quick commands and @ to mention a specific AI agent."
+        }
     }
 }
