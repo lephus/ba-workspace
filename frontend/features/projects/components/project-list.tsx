@@ -57,27 +57,27 @@ function ProjectTableSkeleton() {
 }
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
-  const t = useTranslations('projects');
+  const t = useTranslations("projects");
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="bg-muted mb-4 flex size-12 items-center justify-center rounded-full">
         <FolderOpen className="text-muted-foreground size-6" />
       </div>
-      <h3 className="text-lg font-semibold">{t('empty.title')}</h3>
+      <h3 className="text-lg font-semibold">{t("empty.title")}</h3>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-        {t('empty.description')}
+        {t("empty.description")}
       </p>
       <Button className="mt-4" onClick={onCreateClick}>
         <Plus className="size-4" />
-        {t('createProject')}
+        {t("createProject")}
       </Button>
     </div>
   );
 }
 
 export function ProjectList() {
-  const t = useTranslations('projects');
-  const tc = useTranslations('common');
+  const t = useTranslations("projects");
+  const tc = useTranslations("common");
   const { data: projects, isLoading, isError, error } = useProjects();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -105,14 +105,12 @@ export function ProjectList() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>{t('title')}</CardTitle>
-              <CardDescription>
-                {t('description')}
-              </CardDescription>
+              <CardTitle>{t("title")}</CardTitle>
+              <CardDescription>{t("description")}</CardDescription>
             </div>
-            <Button onClick={handleCreate}>
+            <Button onClick={handleCreate} data-tour="create-project">
               <Plus className="size-4" />
-              {t('createProject')}
+              {t("createProject")}
             </Button>
           </div>
         </CardHeader>
@@ -122,7 +120,7 @@ export function ProjectList() {
           ) : isError ? (
             <div className="py-8 text-center">
               <p className="text-destructive">
-                {error?.message || tc('errorLoading')}
+                {error?.message || tc("errorLoading")}
               </p>
             </div>
           ) : !projects || projects.length === 0 ? (
@@ -131,16 +129,19 @@ export function ProjectList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">{tc('id')}</TableHead>
-                  <TableHead>{t('projectName')}</TableHead>
-                  <TableHead className="w-44">{t('createdAt')}</TableHead>
-                  <TableHead className="w-44">{t('updatedAt')}</TableHead>
+                  <TableHead className="w-16">{tc("id")}</TableHead>
+                  <TableHead>{t("projectName")}</TableHead>
+                  <TableHead className="w-44">{t("createdAt")}</TableHead>
+                  <TableHead className="w-44">{t("updatedAt")}</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {projects.map((project) => (
-                  <TableRow key={project.id}>
+                {projects.map((project, index) => (
+                  <TableRow
+                    key={project.id}
+                    {...(index === 0 ? { "data-tour": "project-row" } : {})}
+                  >
                     <TableCell className="text-muted-foreground font-mono">
                       {project.id}
                     </TableCell>
@@ -161,34 +162,43 @@ export function ProjectList() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            {...(index === 0
+                              ? { "data-tour": "project-actions" }
+                              : {})}
+                          >
                             <MoreHorizontal className="size-4" />
-                            <span className="sr-only">{tc('openMenu')}</span>
+                            <span className="sr-only">{tc("openMenu")}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/projects/${project.id}/conversations`}>
+                            <Link
+                              href={`/projects/${project.id}/conversations`}
+                            >
                               <MessageSquare className="size-4" />
-                              {t('conversations')}
+                              {t("conversations")}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link href={`/projects/${project.id}/documents`}>
                               <FolderOpen className="size-4" />
-                              {t('documents')}
+                              {t("documents")}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEdit(project)}>
                             <Pencil className="size-4" />
-                            {tc('edit')}
+                            {tc("edit")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(project)}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="size-4" />
-                            {tc('delete')}
+                            {tc("delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

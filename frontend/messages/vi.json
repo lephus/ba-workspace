@@ -195,5 +195,33 @@
         "active": "hoạt động",
         "hide": "Ẩn",
         "details": "Chi tiết"
+    },
+    "tour": {
+        "projects": {
+            "restartTour": "Bắt đầu tour hướng dẫn",
+            "step1Title": "Chào mừng đến BAWS 👋",
+            "step1Desc": "Đây là bảng điều khiển dự án của bạn. Tất cả các dự án phân tích nghiệp vụ đều ở đây.",
+            "step2Title": "Tạo dự án",
+            "step2Desc": "Nhấn vào đây để tạo dự án phân tích nghiệp vụ mới. Đặt tên và bắt đầu làm việc.",
+            "step3Title": "Dự án của bạn",
+            "step3Desc": "Mỗi hàng là một dự án. Nhấn vào tên dự án để mở và bắt đầu phân tích.",
+            "step4Title": "Thao tác dự án",
+            "step4Desc": "Sử dụng menu này để đổi tên hoặc xóa dự án.",
+            "step5Title": "API Keys",
+            "step5Desc": "Cấu hình API key của nhà cung cấp AI tại đây. BAWS sử dụng chúng để cung cấp phân tích AI."
+        },
+        "conversations": {
+            "restartTour": "Bắt đầu tour hướng dẫn",
+            "step6Title": "Cuộc hội thoại",
+            "step6Desc": "Thanh bên này liệt kê tất cả cuộc hội thoại trong dự án. Mỗi cuộc hội thoại là một phiên phân tích riêng biệt.",
+            "step7Title": "Cuộc hội thoại mới",
+            "step7Desc": "Nhấn vào đây để tạo cuộc hội thoại mới và bắt đầu trò chuyện với các AI agent.",
+            "step8Title": "Tài liệu",
+            "step8Desc": "Tải lên tài liệu dự án (PDF, DOCX, v.v.) tại đây. AI sẽ sử dụng chúng làm ngữ cảnh để phân tích.",
+            "step9Title": "Thao tác nhanh",
+            "step9Desc": "Nhấn vào một trong các mẫu có sẵn (ví dụ: 'Viết User Stories') để nhanh chóng bắt đầu một tác vụ BA phổ biến.",
+            "step10Title": "Bắt đầu phân tích",
+            "step10Desc": "Nhập tin nhắn của bạn tại đây. Sử dụng / cho lệnh nhanh và @ để nhắc đến một AI agent cụ thể."
+        }
     }
 }

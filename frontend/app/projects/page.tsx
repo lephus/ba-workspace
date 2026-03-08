@@ -1,6 +1,7 @@
 import { ProjectList } from "@/features/projects/components";
 import { getTranslations } from "next-intl/server";
 import { ApiKeyManager } from "@/features/settings/components";
+import { ProjectsTour } from "@/features/tour/projects-tour";
 
 export default async function ProjectsPage() {
   const t = await getTranslations("projects");
@@ -10,12 +11,18 @@ export default async function ProjectsPage() {
       <div className="container mx-auto max-w-5xl py-8 px-4 pb-16">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-            <p className="text-muted-foreground mt-1">
-              {t("description")}
-            </p>
+            <h1
+              className="text-3xl font-bold tracking-tight"
+              data-tour="page-header"
+            >
+              {t("title")}
+            </h1>
+            <p className="text-muted-foreground mt-1">{t("description")}</p>
           </div>
-          <ApiKeyManager />
+          <div className="flex items-center gap-2">
+            <ProjectsTour />
+            <ApiKeyManager />
+          </div>
         </div>
         <ProjectList />
       </div>

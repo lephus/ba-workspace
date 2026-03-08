@@ -16,7 +16,7 @@ You only need **one command** (or script) to run both backend and frontend, then
 
 - **Python 3** (to run the backend)
 - **Node.js 18+** (to run the web UI)
-- **Google Gemini API key** (free): used for AI features in the app
+- **Google Gemini API key** (free): needed for AI features and added later in the app UI
 
 ---
 
@@ -37,16 +37,16 @@ The app reads environment variables from a **`.env`** file in the project root (
 
 ### 1.2. Edit `.env`
 
-Open **`.env`** in a text editor (Notepad, VS Code, TextEdit, etc.) and:
+Open **`.env`** in a text editor (Notepad, VS Code, TextEdit, etc.) and review the local settings:
 
-1. Find the line **`GEMINI_API_KEY=your_gemini_api_key_here`**.
-2. Replace **`your_gemini_api_key_here`** with your real API key.
-3. (Optional) You can leave the other lines as-is for local use:
-   - `BE_PORT=5050` — backend port
-   - `NEXT_PUBLIC_API_URL=http://localhost:5050/api/v1` — API URL used by the frontend
+1. Make sure **`BE_PORT=5050`** is correct for the backend.
+2. Make sure **`NEXT_PUBLIC_API_URL=http://localhost:5050/api/v1`** points to your backend.
+3. You can leave the other lines as-is for local use.
 
 **Get a free Gemini API key:**  
 👉 https://aistudio.google.com/app/apikey
+
+> **Note:** You do not need to put `GEMINI_API_KEY` in `.env` if you manage keys in the app UI.
 
 After saving `.env`, you can run the application.
 
@@ -59,7 +59,7 @@ After saving `.env`, you can run the application.
 The script will:
 
 - Check for Python 3 and Node.js
-- Create `.env` from `.env.example` if missing and prompt you to add your API key
+- Create `.env` from `.env.example` if missing
 - Install backend (Python) and frontend (Node) dependencies
 - Start the backend (port 5050) and web UI (port 3000)
 
@@ -77,7 +77,9 @@ The script will:
 
    **http://localhost:3000**
 
-5. To stop: press **Ctrl+C** in the terminal where `start.sh` is running.
+5. In the app, open **Settings → API Keys** and add your Gemini API key.
+
+6. To stop: press **Ctrl+C** in the terminal where `start.sh` is running.
 
 ### Manual run (if you prefer the command line)
 
@@ -102,6 +104,7 @@ The script will:
    ```
 
 4. Open your browser: **http://localhost:3000**.
+5. Go to **Settings → API Keys** and add your Gemini API key.
 
 ---
 

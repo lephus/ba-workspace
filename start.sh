@@ -32,10 +32,10 @@ if [ ! -f "$ROOT/.env" ]; then
   echo "📄 No .env file found. Creating from .env.example..."
   cp "$ROOT/.env.example" "$ROOT/.env"
   echo ""
-  echo "⚠️  You need to add your API key to .env for full functionality:"
+  echo "⚠️  Review .env before continuing:"
   echo "   1. Open the file: .env (same folder as start.sh)"
-  echo "   2. Optionally add any environment configuration"
-  echo "   3. Get a free API key at: https://aistudio.google.com/app/apikey"
+  echo "   2. Check BE_PORT and NEXT_PUBLIC_API_URL"
+  echo "   3. Gemini API keys can be added later in the app UI (Settings -> API Keys)"
   echo ""
   read -p "Have you updated .env? (Press Enter to continue, Ctrl+C to exit and edit later): " _
   echo ""

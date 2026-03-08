@@ -83,7 +83,10 @@ export function NewChatArea({ projectId }: NewChatAreaProps) {
           tạo tự động.
         </p>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full">
+        <div
+          className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full"
+          data-tour="quick-actions"
+        >
           {[
             {
               icon: "📋",
