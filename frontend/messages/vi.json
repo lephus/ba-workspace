@@ -120,6 +120,18 @@
             "pinnedUnpinned": "Đã bỏ ghim",
             "pinnedDone": "Đã ghim cuộc hội thoại"
         },
+        "newChat": {
+            "defaultTitle": "Cuộc hội thoại mới",
+            "title": "Bắt đầu cuộc hội thoại mới",
+            "description": "Nhập tin nhắn để bắt đầu phân tích nghiệp vụ. Cuộc hội thoại sẽ được tạo tự động.",
+            "createError": "Không thể tạo cuộc hội thoại. Vui lòng thử lại.",
+            "suggestions": {
+                "businessRequirements": "Phân tích yêu cầu nghiệp vụ",
+                "userStories": "Viết User Stories & Acceptance Criteria",
+                "reviewDocuments": "Review tài liệu và đặc tả",
+                "analysisReport": "Tạo báo cáo phân tích"
+            }
+        },
         "chat": {
             "defaultTitle": "Cuộc hội thoại",
             "pinnedMessages": "Tin nhắn đã ghim",
@@ -189,6 +201,55 @@
         "errorSize": "\"{name}\" — vượt quá 5MB",
         "placeholder": "Nhập tin nhắn... (Enter để gửi, Shift+Enter xuống dòng, / để lệnh nhanh)",
         "send": "Gửi tin nhắn"
+    },
+    "settings": {
+        "apiKeys": {
+            "trigger": "API Keys",
+            "title": "Quản lý API Keys",
+            "description": "Thêm nhiều Gemini API key. Hệ thống sẽ tự động chuyển sang key khác nếu key hiện tại bị lỗi hoặc hết quota.",
+            "empty": {
+                "title": "Chưa có API key nào.",
+                "description": "Thêm key Gemini bên dưới hoặc cấu hình trong file .env"
+            },
+            "addSectionTitle": "Thêm API key mới",
+            "fields": {
+                "keyPlaceholder": "Nhập Gemini API key...",
+                "labelPlaceholder": "Nhãn (tuỳ chọn, vd: Key cá nhân, Key team...)"
+            },
+            "actions": {
+                "validate": "Kiểm tra",
+                "add": "Thêm key",
+                "use": "Sử dụng",
+                "useThisKey": "Sử dụng key này",
+                "disable": "Tắt key",
+                "enable": "Bật key",
+                "delete": "Xoá key"
+            },
+            "badges": {
+                "current": "Đang dùng"
+            },
+            "lastUsed": "Dùng lần cuối: {datetime}",
+            "info": {
+                "selectTitle": "Chọn key:",
+                "selectDescription": "Nhấn nút \"Sử dụng\" để chuyển sang key mong muốn. Tất cả các key đều được đối xử ngang bằng.",
+                "rotateTitle": "Tự động đổi key:",
+                "rotateDescription": "Khi một key bị lỗi (hết quota, không hợp lệ), hệ thống tự động chuyển sang key tiếp theo."
+            },
+            "toasts": {
+                "enterKey": "Vui lòng nhập API key",
+                "addSuccess": "Đã thêm API key thành công",
+                "deleteSuccess": "Đã xoá API key",
+                "deactivatedSuccess": "Đã tắt API key",
+                "activatedSuccess": "Đã bật API key",
+                "setActiveSuccess": "Đã chuyển sang key này",
+                "enterKeyToValidate": "Vui lòng nhập API key để kiểm tra",
+                "valid": "API key hợp lệ!",
+                "validWithDetail": "Key hợp lệ: {detail}",
+                "invalid": "API key không hợp lệ",
+                "validateError": "Không thể kiểm tra API key",
+                "unknownError": "Lỗi không xác định"
+            }
+        }
     },
     "agents": {
         "aiTeam": "AI Team",

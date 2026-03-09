@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateConversation } from "@/features/conversations/hooks";
 import { useDocuments, useUploadDocument } from "@/features/documents/hooks";
@@ -13,8 +14,8 @@ interface NewChatAreaProps {
   projectId: number;
 }
 
-function generateTitle(content: string): string {
-  const firstLine = content.split("\n").find((l) => l.trim()) || "New chat";
+function generateTitle(content: string, fallbackTitle: string): string {
+  const firstLine = content.split("\n").find((l) => l.trim()) || fallbackTitle;
   const trimmed = firstLine.trim();
   if (trimmed.length <= 50) return trimmed;
   return trimmed.slice(0, 47) + "...";
@@ -22,6 +23,7 @@ function generateTitle(content: string): string {
 
 export function NewChatArea({ projectId }: NewChatAreaProps) {
   const router = useRouter();
+  const t = useTranslations("conversations.newChat");
   const [isSending, setIsSending] = useState(false);
 
   const { data: documents } = useDocuments(projectId);
@@ -37,7 +39,7 @@ export function NewChatArea({ projectId }: NewChatAreaProps) {
 
     try {
       // 1. Create conversation with auto-generated title (uses hook → invalidates query cache)
-      const title = generateTitle(content);
+      const title = generateTitle(content, t("defaultTitle"));
       const conversation = await createConversation.mutateAsync({ title });
 
       // 2. Store pending message in sessionStorage for ChatArea to pick up
@@ -50,7 +52,7 @@ export function NewChatArea({ projectId }: NewChatAreaProps) {
       router.push(`/projects/${projectId}/conversations/${conversation.id}`);
     } catch (error) {
       console.error("Error creating conversation:", error);
-      toast.error("Không thể tạo cuộc hội thoại. Vui lòng thử lại.");
+      toast.error(t("createError"));
       setIsSending(false);
     }
   };
@@ -77,10 +79,9 @@ export function NewChatArea({ projectId }: NewChatAreaProps) {
         <div className="bg-muted mb-6 flex size-16 items-center justify-center rounded-full">
           <Sparkles className="text-primary size-8" />
         </div>
-        <h2 className="text-2xl font-semibold">Bắt đầu cuộc hội thoại mới</h2>
+        <h2 className="text-2xl font-semibold">{t("title")}</h2>
         <p className="text-muted-foreground mt-2 max-w-md text-center text-sm">
-          Nhập tin nhắn để bắt đầu phân tích nghiệp vụ. Cuộc hội thoại sẽ được
-          tạo tự động.
+          {t("description")}
         </p>
 
         <div
@@ -90,19 +91,19 @@ export function NewChatArea({ projectId }: NewChatAreaProps) {
           {[
             {
               icon: "📋",
-              text: "Phân tích yêu cầu nghiệp vụ",
+              text: t("suggestions.businessRequirements"),
             },
             {
               icon: "📝",
-              text: "Viết User Stories & Acceptance Criteria",
+              text: t("suggestions.userStories"),
             },
             {
               icon: "🔍",
-              text: "Review tài liệu và đặc tả",
+              text: t("suggestions.reviewDocuments"),
             },
             {
               icon: "📊",
-              text: "Tạo báo cáo phân tích",
+              text: t("suggestions.analysisReport"),
             },
           ].map((suggestion) => (
             <button

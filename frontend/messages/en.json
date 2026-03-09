@@ -121,6 +121,18 @@
             "pinnedUnpinned": "Unpinned",
             "pinnedDone": "Conversation pinned"
         },
+        "newChat": {
+            "defaultTitle": "New conversation",
+            "title": "Start a new conversation",
+            "description": "Enter a message to begin business analysis. The conversation will be created automatically.",
+            "createError": "Unable to create the conversation. Please try again.",
+            "suggestions": {
+                "businessRequirements": "Analyze business requirements",
+                "userStories": "Write User Stories & Acceptance Criteria",
+                "reviewDocuments": "Review documents and specifications",
+                "analysisReport": "Create an analysis report"
+            }
+        },
         "chat": {
             "defaultTitle": "Conversation",
             "pinnedMessages": "Pinned Messages",
@@ -190,6 +202,55 @@
         "errorSize": "\"{name}\" — exceeds 5MB",
         "placeholder": "Enter message... (Enter to send, Shift+Enter for new line, / for quick commands)",
         "send": "Send message"
+    },
+    "settings": {
+        "apiKeys": {
+            "trigger": "API Keys",
+            "title": "Manage API Keys",
+            "description": "Add multiple Gemini API keys. The system will automatically switch to another key if the current one fails or runs out of quota.",
+            "empty": {
+                "title": "No API keys yet.",
+                "description": "Add a Gemini key below or configure one in the .env file"
+            },
+            "addSectionTitle": "Add a new API key",
+            "fields": {
+                "keyPlaceholder": "Enter Gemini API key...",
+                "labelPlaceholder": "Label (optional, e.g. Personal key, Team key...)"
+            },
+            "actions": {
+                "validate": "Validate",
+                "add": "Add key",
+                "use": "Use",
+                "useThisKey": "Use this key",
+                "disable": "Disable key",
+                "enable": "Enable key",
+                "delete": "Delete key"
+            },
+            "badges": {
+                "current": "In use"
+            },
+            "lastUsed": "Last used: {datetime}",
+            "info": {
+                "selectTitle": "Select a key:",
+                "selectDescription": "Click \"Use\" to switch to the key you want. All keys are treated equally.",
+                "rotateTitle": "Automatic rotation:",
+                "rotateDescription": "When a key fails or becomes invalid, the system automatically switches to the next key."
+            },
+            "toasts": {
+                "enterKey": "Please enter an API key",
+                "addSuccess": "API key added successfully",
+                "deleteSuccess": "API key deleted",
+                "deactivatedSuccess": "API key disabled",
+                "activatedSuccess": "API key enabled",
+                "setActiveSuccess": "Switched to this key",
+                "enterKeyToValidate": "Please enter an API key to validate",
+                "valid": "API key is valid!",
+                "validWithDetail": "Valid key: {detail}",
+                "invalid": "API key is invalid",
+                "validateError": "Unable to validate API key",
+                "unknownError": "Unknown error"
+            }
+        }
     },
     "agents": {
         "aiTeam": "AI Team",

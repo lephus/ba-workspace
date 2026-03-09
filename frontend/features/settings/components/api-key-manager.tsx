@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Key,
   Plus,
@@ -43,6 +44,7 @@ export function ApiKeyManager() {
   const [newKey, setNewKey] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [showKeyInput, setShowKeyInput] = useState(false);
+  const t = useTranslations("settings.apiKeys");
 
   const { data: keys, isLoading } = useApiKeys();
   const addKey = useAddApiKey();
@@ -53,7 +55,7 @@ export function ApiKeyManager() {
 
   const handleAddKey = async () => {
     if (!newKey.trim()) {
-      toast.error("Vui lòng nhập API key");
+      toast.error(t("toasts.enterKey"));
       return;
     }
     try {
@@ -62,11 +64,11 @@ export function ApiKeyManager() {
         label: newLabel.trim() || undefined,
         validate: true,
       });
-      toast.success("Đã thêm API key thành công");
+      toast.success(t("toasts.addSuccess"));
       setNewKey("");
       setNewLabel("");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Lỗi không xác định";
+      const msg = e instanceof Error ? e.message : t("toasts.unknownError");
       toast.error(msg);
     }
   };
@@ -74,9 +76,9 @@ export function ApiKeyManager() {
   const handleDelete = async (keyId: number) => {
     try {
       await deleteKey.mutateAsync(keyId);
-      toast.success("Đã xoá API key");
+      toast.success(t("toasts.deleteSuccess"));
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Lỗi không xác định";
+      const msg = e instanceof Error ? e.message : t("toasts.unknownError");
       toast.error(msg);
     }
   };
@@ -84,9 +86,11 @@ export function ApiKeyManager() {
   const handleToggle = async (keyId: number, isActive: boolean) => {
     try {
       await toggleKey.mutateAsync({ keyId, isActive: !isActive });
-      toast.success(isActive ? "Đã tắt API key" : "Đã bật API key");
+      toast.success(
+        isActive ? t("toasts.deactivatedSuccess") : t("toasts.activatedSuccess"),
+      );
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Lỗi không xác định";
+      const msg = e instanceof Error ? e.message : t("toasts.unknownError");
       toast.error(msg);
     }
   };
@@ -94,29 +98,31 @@ export function ApiKeyManager() {
   const handleSetActive = async (apiKey: ApiKey) => {
     try {
       await setActiveKey.mutateAsync(apiKey.id!);
-      toast.success("Đã chuyển sang key này");
+      toast.success(t("toasts.setActiveSuccess"));
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Lỗi không xác định";
+      const msg = e instanceof Error ? e.message : t("toasts.unknownError");
       toast.error(msg);
     }
   };
 
   const handleValidate = async () => {
     if (!newKey.trim()) {
-      toast.error("Vui lòng nhập API key để kiểm tra");
+      toast.error(t("toasts.enterKeyToValidate"));
       return;
     }
     try {
       const result = await validateKey.mutateAsync(newKey.trim());
       if (result.valid) {
         toast.success(
-          result.error ? `Key hợp lệ: ${result.error}` : "API key hợp lệ!",
+          result.error
+            ? t("toasts.validWithDetail", { detail: result.error })
+            : t("toasts.valid"),
         );
       } else {
-        toast.error(result.error || "API key không hợp lệ");
+        toast.error(result.error || t("toasts.invalid"));
       }
     } catch {
-      toast.error("Không thể kiểm tra API key");
+      toast.error(t("toasts.validateError"));
     }
   };
 
@@ -132,7 +138,7 @@ export function ApiKeyManager() {
           data-tour="api-keys"
         >
           <Key className="size-4" />
-          <span className="hidden sm:inline">API Keys</span>
+          <span className="hidden sm:inline">{t("trigger")}</span>
           {activeCount > 0 && (
             <Badge variant="secondary" className="ml-1 text-xs">
               {activeCount}
@@ -144,12 +150,9 @@ export function ApiKeyManager() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="size-5" />
-            Quản lý API Keys
+            {t("title")}
           </DialogTitle>
-          <DialogDescription>
-            Thêm nhiều Gemini API key. Hệ thống sẽ tự động chuyển sang key khác
-            nếu key hiện tại bị lỗi hoặc hết quota.
-          </DialogDescription>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         {/* Key list */}
@@ -161,8 +164,8 @@ export function ApiKeyManager() {
           ) : !keys || keys.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground text-sm">
               <Key className="size-8 mx-auto mb-2 opacity-50" />
-              <p>Chưa có API key nào.</p>
-              <p>Thêm key Gemini bên dưới hoặc cấu hình trong file .env</p>
+              <p>{t("empty.title")}</p>
+              <p>{t("empty.description")}</p>
             </div>
           ) : (
             keys.map((apiKey, index) => (
@@ -179,13 +182,13 @@ export function ApiKeyManager() {
 
         {/* Add new key */}
         <div className="border-t pt-4 mt-2 space-y-3">
-          <p className="text-sm font-medium">Thêm API key mới</p>
+          <p className="text-sm font-medium">{t("addSectionTitle")}</p>
           <div className="space-y-2">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Input
                   type={showKeyInput ? "text" : "password"}
-                  placeholder="Nhập Gemini API key..."
+                  placeholder={t("fields.keyPlaceholder")}
                   value={newKey}
                   onChange={(e) => setNewKey(e.target.value)}
                   onKeyDown={(e) => {
@@ -207,7 +210,7 @@ export function ApiKeyManager() {
             </div>
             <Input
               type="text"
-              placeholder="Nhãn (tuỳ chọn, vd: Key cá nhân, Key team...)"
+              placeholder={t("fields.labelPlaceholder")}
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               onKeyDown={(e) => {
@@ -226,7 +229,7 @@ export function ApiKeyManager() {
                 ) : (
                   <ShieldCheck className="size-4" />
                 )}
-                Kiểm tra
+                {t("actions.validate")}
               </Button>
               <Button
                 onClick={handleAddKey}
@@ -238,7 +241,7 @@ export function ApiKeyManager() {
                 ) : (
                   <Plus className="size-4" />
                 )}
-                Thêm key
+                {t("actions.add")}
               </Button>
             </div>
           </div>
@@ -247,12 +250,10 @@ export function ApiKeyManager() {
         {/* Info */}
         <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1 mt-2">
           <p>
-            <strong>Chọn key:</strong> Nhấn nút &quot;Sử dụng&quot; để chuyển
-            sang key mong muốn. Tất cả các key đều được đối xử ngang bằng.
+            <strong>{t("info.selectTitle")}</strong> {t("info.selectDescription")}
           </p>
           <p>
-            <strong>Tự động đổi key:</strong> Khi một key bị lỗi (hết quota,
-            không hợp lệ), hệ thống tự động chuyển sang key tiếp theo.
+            <strong>{t("info.rotateTitle")}</strong> {t("info.rotateDescription")}
           </p>
         </div>
       </DialogContent>
@@ -271,6 +272,9 @@ function ApiKeyRow({
   onToggle: (id: number, isActive: boolean) => void;
   onSetActive: (apiKey: ApiKey) => void;
 }) {
+  const t = useTranslations("settings.apiKeys");
+  const locale = useLocale();
+
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
@@ -302,7 +306,7 @@ function ApiKeyRow({
           </code>
           {apiKey.is_current && (
             <Badge className="text-[10px] px-1.5 py-0 bg-primary/15 text-primary border-primary/30">
-              Đang dùng
+              {t("badges.current")}
             </Badge>
           )}
           {apiKey.label && (
@@ -318,8 +322,9 @@ function ApiKeyRow({
         )}
         {apiKey.last_used_at && (
           <p className="text-[10px] text-muted-foreground mt-0.5">
-            Dùng lần cuối:{" "}
-            {new Date(apiKey.last_used_at).toLocaleString("vi-VN")}
+            {t("lastUsed", {
+              datetime: new Date(apiKey.last_used_at).toLocaleString(locale === "vi" ? "vi-VN" : "en-US"),
+            })}
           </p>
         )}
       </div>
@@ -333,9 +338,9 @@ function ApiKeyRow({
             size="sm"
             className="h-6 text-[10px] px-2"
             onClick={() => onSetActive(apiKey)}
-            title="Sử dụng key này"
+            title={t("actions.useThisKey")}
           >
-            Sử dụng
+            {t("actions.use")}
           </Button>
         )}
         {/* Toggle & Delete - only for UI keys */}
@@ -345,7 +350,7 @@ function ApiKeyRow({
               variant="ghost"
               size="icon-xs"
               onClick={() => onToggle(apiKey.id!, apiKey.is_active)}
-              title={apiKey.is_active ? "Tắt key" : "Bật key"}
+              title={apiKey.is_active ? t("actions.disable") : t("actions.enable")}
             >
               {apiKey.is_active ? (
                 <ToggleRight className="size-4 text-green-500" />
@@ -357,7 +362,7 @@ function ApiKeyRow({
               variant="ghost"
               size="icon-xs"
               onClick={() => onDelete(apiKey.id!)}
-              title="Xoá key"
+              title={t("actions.delete")}
               className="text-destructive hover:text-destructive"
             >
               <Trash2 className="size-4" />
