@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify
 from sqlalchemy import text
 
 from app.models import db
-from app.services.gemini_client import validate_api_key
+from app.services.claude_client import validate_api_key
 from app.services.rate_limiter import get_status as get_rate_limit_status
 
 bp = Blueprint("health", __name__)
@@ -44,7 +44,7 @@ def health():
 @bp.route("/rate-limit", methods=["GET"])
 def rate_limit():
     """
-    Gemini API rate-limit and key status.
+    Claude API rate-limit and key status.
     ---
     tags:
       - Health

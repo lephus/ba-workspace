@@ -60,7 +60,7 @@ export async function sendMessageApi(
     if (response.status === 429) {
       const body = await response.json().catch(() => null);
       throw new Error(
-        body?.error || "Gemini API đang bị giới hạn. Vui lòng đợi.",
+        body?.error || "Claude API đang bị giới hạn. Vui lòng đợi.",
       );
     }
     if (response.status === 401) {

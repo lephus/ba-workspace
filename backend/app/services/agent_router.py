@@ -4,14 +4,14 @@ Reads conversation-agents.yaml and uses the LLM to select one or more agents.
 
 Includes intelligent requirement analyzer: before routing, user input is
 analyzed and refactored (GIVEN DATA, USER GOAL, IMPLICIT ASSUMPTIONS,
-MISSING INFORMATION) so Gemini receives a clear, structured requirement.
+MISSING INFORMATION) so the LLM receives a clear, structured requirement.
 """
 import json
 import re
 from pathlib import Path
 from typing import Optional
 
-from app.services.gemini_client import generate_text
+from app.services.claude_client import generate_text
 
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONVERSATION_AGENTS_CONFIG = (
@@ -58,7 +58,7 @@ User message:
 def analyze_and_refactor_requirement(user_message: str) -> tuple[dict, str]:
     """
     Analyze user requirement into GIVEN DATA, USER GOAL, IMPLICIT ASSUMPTIONS, MISSING INFORMATION,
-    and produce a refactored requirement string for Gemini.
+    and produce a refactored requirement string for the LLM.
     Returns (analysis_dict, refactored_requirement_str).
     On failure, returns ({}, user_message) so callers can fall back to original.
     """
@@ -92,14 +92,18 @@ def analyze_and_refactor_requirement(user_message: str) -> tuple[dict, str]:
     return analysis, refactored
 
 
-def refactor_requirement_for_gemini(user_message: str) -> str:
+def refactor_requirement_for_llm(user_message: str) -> str:
     """
-    Refactor the user's input requirement so Gemini understands it correctly.
+    Refactor the user's input requirement so the LLM understands it correctly.
     Runs the intelligent requirement analyzer; returns the refactored requirement string.
     On analyzer failure, returns the original user_message.
     """
     _, refactored = analyze_and_refactor_requirement(user_message)
     return refactored if refactored else user_message
+
+
+# Keep backward-compat alias
+refactor_requirement_for_gemini = refactor_requirement_for_llm
 
 
 # --- Agent routing ---

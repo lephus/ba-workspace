@@ -8,10 +8,10 @@ from app.models import Message, Conversation
 from app.services.agent_router import (
     get_agent_info_from_config,
     load_agents_config,
-    refactor_requirement_for_gemini,
+    refactor_requirement_for_llm,
     route_to_agents,
 )
-from app.services.gemini_client import generate_chat
+from app.services.claude_client import generate_chat
 
 logger = logging.getLogger(__name__)
 
@@ -103,10 +103,10 @@ def get_agent_reply(conversation_id: int, new_user_content: str) -> tuple[str, l
     """
     Infer which agent(s) to use, build combined prompt when multiple agents, then reply.
     First runs intelligent requirement analyzer to refactor user input; routing and
-    reply use the refactored requirement so Gemini understands correctly.
+    reply use the refactored requirement so the LLM understands correctly.
     Returns (reply_text, selected_agent_ids). Caller may use selected_agent_ids[0] for bot.
     """
-    refactored_content = refactor_requirement_for_gemini(new_user_content)
+    refactored_content = refactor_requirement_for_llm(new_user_content)
     selected_ids, out_of_scope = route_to_agents(refactored_content)
     agents_config = load_agents_config()
     selected_agents = [a for a in agents_config if a.get("id") in selected_ids]

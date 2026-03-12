@@ -1,11 +1,11 @@
-"""ApiKey model - stores user-provided Gemini API keys."""
+"""ApiKey model - stores user-provided Claude (Anthropic) API keys."""
 from datetime import datetime
 
 from app.models import db
 
 
 class ApiKey(db.Model):
-    """Stores Gemini API keys added via the UI."""
+    """Stores Claude (Anthropic) API keys added via the UI."""
 
     __tablename__ = "api_keys"
 

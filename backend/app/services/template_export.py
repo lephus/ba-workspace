@@ -6,7 +6,7 @@ This is the main entry point used by the messages API.
 """
 import logging
 
-from app.services.gemini_client import generate_text
+from app.services.claude_client import generate_text
 from app.services.template_prompt_builder import (
     build_export_prompt,
     parse_llm_json,
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def generate_template_data(template_type: str, conversation_id: int) -> dict:
     """
-    Call Gemini with a compact prompt to generate structured JSON data
+    Call Claude with a compact prompt to generate structured JSON data
     for the given template type, using conversation history as context.
 
     Returns the parsed and validated dict.

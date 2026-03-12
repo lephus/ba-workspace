@@ -2,11 +2,11 @@
 
 After a document is uploaded, this service:
   1. Parses the file to extract plain text.
-  2. Calls Gemini to produce a structured JSON with summary / keywords /
+  2. Calls Claude to produce a structured JSON with summary / keywords /
      important_points / assigned_agent / is_relevant_to_ba.
   3. Persists the results back to the Document record so every future chat
      that references this document can inject the pre-computed context into
-     the agent prompt without re-parsing or re-calling Gemini.
+     the agent prompt without re-parsing or re-calling the LLM.
 """
 import json
 import logging
@@ -54,14 +54,14 @@ Limit keywords to 10. Limit important_points to 5.
 
 def process_document(document_id: int) -> Optional[dict]:
     """
-    Run the RAG pipeline for a document: parse → Gemini extract → persist to DB.
+    Run the RAG pipeline for a document: parse → Claude extract → persist to DB.
     Returns the extracted dict on success, None on failure.
     Must be called within a Flask application context.
     """
     from app.models import db
     from app.models.document import Document
     from app.services.document_parser import parse_document
-    from app.services.gemini_client import get_model
+    from app.services.claude_client import generate_content as llm_generate_content
 
     doc = Document.query.get(document_id)
     if doc is None:
@@ -80,10 +80,10 @@ def process_document(document_id: int) -> Optional[dict]:
         logger.warning("RAG: doc %s has no extractable text; skipping", document_id)
         return None
 
-    # Truncate to ~12 000 chars to stay within Gemini token limits
+    # Truncate to ~12 000 chars to stay within token limits
     context_text = document_text[:12_000]
 
-    # ── 2. Gemini extraction ─────────────────────────────────────────────────
+    # ── 2. Claude extraction ──────────────────────────────────────────────────
     ai_task_note = f"\n\nAdditional instruction from the user: {doc.ai_task}" if doc.ai_task else ""
     user_prompt = (
         f"Document filename: {doc.filename}\n\n"
@@ -92,15 +92,12 @@ def process_document(document_id: int) -> Optional[dict]:
     )
 
     try:
-        model = get_model()
-        full_prompt = _RAG_SYSTEM_PROMPT + "\n\n---\n\n" + user_prompt
-        response = model.generate_content(full_prompt)
-        raw = (response.text or "").strip()
+        raw = llm_generate_content(_RAG_SYSTEM_PROMPT, user_prompt).strip()
     except Exception as exc:
-        logger.error("RAG: Gemini call failed for doc %s: %s", document_id, exc)
+        logger.error("RAG: Claude call failed for doc %s: %s", document_id, exc)
         return None
 
-    # ── 3. Parse Gemini JSON ─────────────────────────────────────────────────
+    # ── 3. Parse JSON ─────────────────────────────────────────────────────────
     try:
         # Strip accidental markdown code fences
         if raw.startswith("```"):
@@ -185,7 +182,7 @@ def build_document_context_block(document) -> str:
 def build_project_documents_context(project_id: int) -> Optional[str]:
     """
     Build a compact context block from ALL RAG-processed documents in the project.
-    Uses pre-computed summaries/keywords/points so no extra Gemini calls are needed.
+    Uses pre-computed summaries/keywords/points so no extra LLM calls are needed.
     Returns None if no documents are available.
     """
     from app.models.document import Document

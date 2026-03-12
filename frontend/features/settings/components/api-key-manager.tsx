@@ -147,7 +147,7 @@ export function ApiKeyManager() {
             Quản lý API Keys
           </DialogTitle>
           <DialogDescription>
-            Thêm nhiều Gemini API key. Hệ thống sẽ tự động chuyển sang key khác
+            Thêm nhiều Claude (Anthropic) API key. Hệ thống sẽ tự động chuyển sang key khác
             nếu key hiện tại bị lỗi hoặc hết quota.
           </DialogDescription>
         </DialogHeader>
@@ -162,7 +162,7 @@ export function ApiKeyManager() {
             <div className="text-center py-6 text-muted-foreground text-sm">
               <Key className="size-8 mx-auto mb-2 opacity-50" />
               <p>Chưa có API key nào.</p>
-              <p>Thêm key Gemini bên dưới hoặc cấu hình trong file .env</p>
+              <p>Thêm Claude API key bên dưới hoặc cấu hình trong file .env</p>
             </div>
           ) : (
             keys.map((apiKey, index) => (
@@ -185,7 +185,7 @@ export function ApiKeyManager() {
               <div className="relative flex-1">
                 <Input
                   type={showKeyInput ? "text" : "password"}
-                  placeholder="Nhập Gemini API key..."
+                  placeholder="Nhập Claude (Anthropic) API key..."
                   value={newKey}
                   onChange={(e) => setNewKey(e.target.value)}
                   onKeyDown={(e) => {

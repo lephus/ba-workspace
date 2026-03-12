@@ -1,7 +1,7 @@
-"""Gemini API client with multi-key rotation support."""
+"""Claude (Anthropic) API client with multi-key rotation support."""
 import logging
 from typing import Optional
-from flask import current_app
+
 from app.services.rate_limiter import (
     record_request,
     record_429,
@@ -14,19 +14,21 @@ from app.services.rate_limiter import (
 
 logger = logging.getLogger(__name__)
 
-# Track the key that the current _genai / _gen_model were configured with
+MODEL_ID = "claude-3-5-sonnet-20241022"
+MAX_TOKENS = 8096
+
+# Cache clients keyed by api_key string
+_clients: dict[str, object] = {}
 _configured_key: Optional[str] = None
-_gen_model = None
-_genai = None
 
 
-class GeminiRateLimitError(Exception):
-    """Raised when Gemini returns a 429 rate-limit / quota error."""
+class ClaudeRateLimitError(Exception):
+    """Raised when Claude returns a 429 rate-limit / quota error."""
     pass
 
 
-class GeminiAuthError(Exception):
-    """Raised when the Gemini API key is invalid or expired."""
+class ClaudeAuthError(Exception):
+    """Raised when the Anthropic API key is invalid or expired."""
     pass
 
 
@@ -36,41 +38,27 @@ def _get_active_key() -> str:
     return get_current_api_key()
 
 
-def _ensure_configured(force_key: Optional[str] = None):
-    """Configure genai with the current active key. Re-configures if key changed."""
-    global _genai, _gen_model, _configured_key
-    import google.generativeai as genai
+def _get_client(api_key: Optional[str] = None):
+    """Return an anthropic.Anthropic client for the given (or active) key."""
+    global _configured_key
+    import anthropic
 
-    api_key = force_key or _get_active_key()
-
-    if _genai is not None and _configured_key == api_key:
-        return _genai
-
-    # (Re-)configure with new/different key
-    genai.configure(api_key=api_key)
-    _genai = genai
-    _gen_model = None  # invalidate cached model
-    _configured_key = api_key
-    return _genai
-
-
-def get_model():
-    """Get or create the Gemini model instance (single-turn)."""
-    global _gen_model
-    _ensure_configured()
-    if _gen_model is None:
-        _gen_model = _genai.GenerativeModel("gemini-2.5-flash")
-    return _gen_model
+    key = api_key or _get_active_key()
+    if key not in _clients:
+        _clients[key] = anthropic.Anthropic(api_key=key)
+    _configured_key = key
+    return _clients[key]
 
 
 def validate_api_key() -> dict:
     """
-    Validate the Gemini API key and check generation quota.
-    - If there's a recent quota/rate error (< 300s), report it directly
-      (list_models doesn't share the same quota as generate_content).
-    - Otherwise call list_models() to verify the key is valid.
+    Validate the Claude API key.
+    - If there's a recent quota/rate error (< 300s), report it directly.
+    - Otherwise call models.list() to verify the key is valid.
     Returns: {"valid": bool, "error": str|None}
     """
+    import anthropic
+
     # 1) If we have a recent quota error, the key IS valid but quota is exhausted
     recent = get_recent_error(max_age=300)
     if recent and recent["type"] in ("quota", "rate_limit"):
@@ -82,10 +70,10 @@ def validate_api_key() -> dict:
     if cached is not None:
         return {"valid": cached["valid"], "error": cached["error"]}
 
-    # 3) Call list_models to verify the key itself (auth check only)
+    # 3) Call models.list() to verify the key itself (auth check only)
     try:
-        genai = _ensure_configured()
-        list(genai.list_models())
+        client = _get_client()
+        list(client.models.list())
         set_key_check(valid=True)
         return {"valid": True, "error": None}
     except Exception as e:
@@ -100,17 +88,17 @@ def validate_api_key() -> dict:
             record_error("quota", error_text)
             return {"valid": True, "error": error_text}
         else:
-            error_text = f"Lỗi kết nối Gemini API: {str(e)[:150]}"
+            error_text = f"Lỗi kết nối Claude API: {str(e)[:150]}"
             set_key_check(valid=False, error=error_text)
             record_error("other", error_text)
             return {"valid": False, "error": error_text}
 
 
-def generate_text(prompt: str) -> str:
+def generate_text(prompt: str, system_prompt: Optional[str] = None) -> str:
     """
     Simple single-turn text generation with full error handling and key rotation.
-    Use this for any one-off Gemini call (e.g. agent routing).
-    Raises GeminiRateLimitError or GeminiAuthError on API errors.
+    Use this for any one-off Claude call (e.g. agent routing).
+    Raises ClaudeRateLimitError or ClaudeAuthError on API errors.
     """
     from app.services.key_manager import rotate_key, mark_key_used
 
@@ -119,13 +107,19 @@ def generate_text(prompt: str) -> str:
 
     for attempt in range(max_retries):
         current_key = _get_active_key()
-        _ensure_configured()
-        model = get_model()
+        client = _get_client(current_key)
         record_request()
         try:
-            response = model.generate_content(prompt)
+            kwargs: dict = {
+                "model": MODEL_ID,
+                "max_tokens": MAX_TOKENS,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            if system_prompt:
+                kwargs["system"] = system_prompt
+            response = client.messages.create(**kwargs)
             mark_key_used(current_key)
-            return response.text if response.text else ""
+            return response.content[0].text if response.content else ""
         except Exception as e:
             last_exception = e
             if _is_quota_or_rate_error(e) or _is_auth_error(e):
@@ -134,18 +128,15 @@ def generate_text(prompt: str) -> str:
                                current_key[:8], current_key[-4:], attempt + 1, error_msg)
                 try:
                     rotate_key(current_key, error_msg)
-                    _ensure_configured()  # reconfigure with new key
                     logger.info("Rotated to new key, retrying...")
                     continue
                 except ValueError:
-                    # No more keys available
                     _handle_api_error(e)
                     raise
             else:
                 _handle_api_error(e)
                 raise
 
-    # All retries exhausted
     if last_exception:
         _handle_api_error(last_exception)
         raise last_exception
@@ -153,50 +144,50 @@ def generate_text(prompt: str) -> str:
 
 def generate_content(system_prompt: str, user_message: str) -> str:
     """
-    Generate content using Gemini (single turn, with system prompt).
+    Generate content using Claude (single turn, with system prompt).
     Returns the raw text response.
     """
-    full_prompt = f"{system_prompt}\n\n---\n\nDocument to analyze:\n\n{user_message}"
-    return generate_text(full_prompt)
+    return generate_text(user_message, system_prompt=system_prompt)
 
 
 def generate_chat(system_prompt: str, messages: list[dict], new_user_content: str) -> str:
     """
     Multi-turn chat with conversation history and key rotation.
     messages: list of {"role": "user"|"assistant", "content": str}
-    new_user_content: the latest user message (will be sent via send_message).
+    new_user_content: the latest user message.
     Returns the model reply as text.
     """
-    import google.generativeai as genai
     from app.services.key_manager import rotate_key, mark_key_used
 
-    # Build history for Gemini: "user" and "model" (map assistant -> model)
     history = []
     for m in messages:
         role = m.get("role", "user")
         content = (m.get("content") or "").strip()
         if not content:
             continue
-        if role == "assistant":
-            history.append({"role": "model", "parts": [content]})
-        elif role == "user":
-            history.append({"role": "user", "parts": [content]})
-        # skip system: already in system_instruction
+        if role in ("user", "assistant"):
+            history.append({"role": role, "content": content})
+
+    # Ensure messages alternate correctly (Claude requires user/assistant alternation)
+    # Also ensure the last message before the new one is not from the user
+    claude_messages = history + [{"role": "user", "content": new_user_content}]
 
     max_retries = 5
     last_exception = None
 
     for attempt in range(max_retries):
         current_key = _get_active_key()
-        _ensure_configured()
-
-        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_prompt)
-        chat = model.start_chat(history=history)
+        client = _get_client(current_key)
         record_request()
         try:
-            response = chat.send_message(new_user_content)
+            response = client.messages.create(
+                model=MODEL_ID,
+                max_tokens=MAX_TOKENS,
+                system=system_prompt,
+                messages=claude_messages,
+            )
             mark_key_used(current_key)
-            return response.text if response.text else ""
+            return response.content[0].text if response.content else ""
         except Exception as e:
             last_exception = e
             if _is_quota_or_rate_error(e) or _is_auth_error(e):
@@ -205,7 +196,6 @@ def generate_chat(system_prompt: str, messages: list[dict], new_user_content: st
                                current_key[:8], current_key[-4:], attempt + 1, error_msg)
                 try:
                     rotate_key(current_key, error_msg)
-                    _ensure_configured()
                     logger.info("Rotated to new key, retrying chat...")
                     continue
                 except ValueError:
@@ -227,38 +217,48 @@ def _handle_api_error(e: Exception) -> None:
         msg = _extract_quota_message(e)
         record_error("quota", msg)
         invalidate_key_cache()
-        raise GeminiRateLimitError(msg) from e
+        raise ClaudeRateLimitError(msg) from e
     if _is_auth_error(e):
         record_error("auth", "API key không hợp lệ hoặc đã hết hạn")
         invalidate_key_cache()
-        raise GeminiAuthError(
-            "API key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra GEMINI_API_KEY."
+        raise ClaudeAuthError(
+            "API key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra ANTHROPIC_API_KEY."
         ) from e
-    # Unknown error — still record it
     record_error("other", str(e)[:200])
 
 
 def _is_quota_or_rate_error(e: Exception) -> bool:
     """Check if an exception is a 429 / quota / rate-limit error."""
+    try:
+        import anthropic
+        if isinstance(e, anthropic.RateLimitError):
+            return True
+    except ImportError:
+        pass
     err_str = str(e).lower()
-    if "429" in err_str or "resource_exhausted" in err_str or "quota" in err_str:
+    if "429" in err_str or "rate_limit" in err_str or "overloaded" in err_str:
         return True
     type_name = type(e).__name__.lower()
-    if "resourceexhausted" in type_name or "ratelimit" in type_name:
+    if "ratelimit" in type_name or "overloaded" in type_name:
         return True
     return False
 
 
 def _is_auth_error(e: Exception) -> bool:
     """Check if an exception is an authentication/authorization error."""
+    try:
+        import anthropic
+        if isinstance(e, anthropic.AuthenticationError):
+            return True
+    except ImportError:
+        pass
     err_str = str(e).lower()
     if any(kw in err_str for kw in ("401", "403", "invalid api key", "api_key_invalid",
-                                     "permission_denied", "api key not valid",
-                                     "api key expired")):
+                                     "permission_denied", "authentication",
+                                     "unauthorized", "forbidden")):
         return True
     type_name = type(e).__name__.lower()
-    if any(kw in type_name for kw in ("permissiondenied", "unauthenticated",
-                                       "forbidden", "unauthorized")):
+    if any(kw in type_name for kw in ("authentication", "unauthorized", "forbidden")):
         return True
     return False
 
@@ -266,8 +266,8 @@ def _is_auth_error(e: Exception) -> bool:
 def _extract_quota_message(e: Exception) -> str:
     """Extract a user-friendly message from a quota/rate error."""
     err_str = str(e)
-    if "quota" in err_str.lower() and "free_tier" in err_str.lower():
-        return "Đã hết quota miễn phí hôm nay. Vui lòng đợi hoặc nâng cấp plan."
-    if "429" in err_str:
-        return "Gemini API bị giới hạn tốc độ (429). Vui lòng đợi."
-    return f"Gemini API quota/rate limit: {err_str[:100]}"
+    if "overloaded" in err_str.lower():
+        return "Claude API đang quá tải. Vui lòng thử lại sau."
+    if "429" in err_str or "rate_limit" in err_str.lower():
+        return "Claude API bị giới hạn tốc độ (429). Vui lòng đợi."
+    return f"Claude API rate limit: {err_str[:100]}"

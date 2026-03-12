@@ -10,7 +10,7 @@ from app.services.conversation_agent import get_agent_reply, get_conversation_bo
 from app.services.export_detector import detect_export_format, detect_template_type
 from app.services.export_service import EXPORT_EXT, save_export_to_project
 from app.services.template_export import generate_and_save_template
-from app.services.gemini_client import GeminiRateLimitError, GeminiAuthError
+from app.services.claude_client import ClaudeRateLimitError, ClaudeAuthError
 from app.services.rate_limiter import get_status as get_rate_limit_status
 
 logger = logging.getLogger(__name__)
@@ -260,7 +260,7 @@ def create_message(project_id, conversation_id):
       404:
         description: Conversation not found
       500:
-        description: Agent (Gemini) error when role is user
+        description: Agent (Claude) error when role is user
     """
     conv = Conversation.query.filter_by(
         id=conversation_id, project_id=project_id
@@ -317,11 +317,11 @@ def create_message(project_id, conversation_id):
     if role == "user":
         try:
             reply_text, selected_agent_ids = get_agent_reply(conv.id, agent_content)
-        except GeminiRateLimitError as e:
+        except ClaudeRateLimitError as e:
             db.session.rollback()
             status = get_rate_limit_status()
             return jsonify({"error": str(e), "rate_limit": status}), 429
-        except GeminiAuthError as e:
+        except ClaudeAuthError as e:
             db.session.rollback()
             status = get_rate_limit_status()
             return jsonify({"error": str(e), "rate_limit": status}), 401

@@ -49,7 +49,7 @@ def _truncate_history(conversation_id: int) -> str:
 
 def build_export_prompt(template_type: str, conversation_id: int) -> str:
     """
-    Build the full prompt sent to Gemini for template data generation.
+    Build the full prompt sent to the LLM for template data generation.
 
     Structure (token budget ~3,500 total):
       [ROLE]       ~30 tokens

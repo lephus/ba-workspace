@@ -1,5 +1,5 @@
 """
-Multi-key manager for Gemini API keys.
+Multi-key manager for Claude (Anthropic) API keys.
 
 All keys are managed entirely through the UI (stored in the database).
 Users can manually select which key to use via set_active_key().

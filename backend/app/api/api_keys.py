@@ -1,4 +1,4 @@
-"""API endpoints for managing Gemini API keys."""
+"""API endpoints for managing Claude (Anthropic) API keys."""
 import logging
 
 from flask import Blueprint, jsonify, request
@@ -82,16 +82,16 @@ def add_key():
     # Optionally validate before saving
     if should_validate:
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=raw_key)
-            list(genai.list_models())
+            import anthropic
+            client = anthropic.Anthropic(api_key=raw_key)
+            list(client.models.list())
         except Exception as e:
             err_str = str(e).lower()
-            if any(kw in err_str for kw in ("401", "403", "invalid", "api_key_invalid",
-                                              "permission_denied", "not valid", "expired")):
+            if any(kw in err_str for kw in ("401", "403", "invalid", "authentication",
+                                              "permission_denied", "unauthorized", "forbidden")):
                 return jsonify({"error": "API key không hợp lệ"}), 400
-            # Quota/rate errors mean key is valid but limited
-            if "429" not in err_str and "quota" not in err_str and "resource_exhausted" not in err_str:
+            # Rate/overload errors mean key is valid but limited
+            if "429" not in err_str and "rate_limit" not in err_str and "overloaded" not in err_str:
                 return jsonify({"error": f"Không thể xác thực key: {str(e)[:150]}"}), 400
 
     new_key = ApiKey(key=raw_key, label=label, is_active=True)
@@ -235,15 +235,15 @@ def validate_key():
         return jsonify({"valid": False, "error": "API key không được để trống"})
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=raw_key)
-        list(genai.list_models())
+        import anthropic
+        client = anthropic.Anthropic(api_key=raw_key)
+        list(client.models.list())
         return jsonify({"valid": True, "error": None})
     except Exception as e:
         err_str = str(e).lower()
-        if any(kw in err_str for kw in ("401", "403", "invalid", "api_key_invalid",
-                                          "permission_denied", "not valid", "expired")):
+        if any(kw in err_str for kw in ("401", "403", "invalid", "authentication",
+                                          "permission_denied", "unauthorized", "forbidden")):
             return jsonify({"valid": False, "error": "API key không hợp lệ hoặc đã hết hạn"})
-        if "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str:
-            return jsonify({"valid": True, "error": "Key hợp lệ nhưng đang bị giới hạn quota"})
+        if "429" in err_str or "rate_limit" in err_str or "overloaded" in err_str:
+            return jsonify({"valid": True, "error": "Key hợp lệ nhưng đang bị giới hạn"})
         return jsonify({"valid": False, "error": f"Lỗi kết nối: {str(e)[:150]}"})

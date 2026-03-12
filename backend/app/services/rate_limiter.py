@@ -1,13 +1,13 @@
 """
-In-memory rate-limit tracker for Gemini API calls.
+In-memory rate-limit tracker for Claude (Anthropic) API calls.
 Tracks requests-per-minute (RPM), requests-per-day (RPD),
 429 errors, and recent API errors.
 Also caches API key validation results.
 
-Based on Google's rate-limit model:
+Based on Anthropic's rate-limit model:
 - RPM  (Requests per Minute)
 - TPM  (Tokens per Minute) — not tracked locally
-- RPD  (Requests per Day) — resets at midnight Pacific Time
+- RPD  (Requests per Day)
 """
 import threading
 import time
@@ -17,27 +17,27 @@ from typing import Optional, Union
 _lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
-# Tier definitions based on Google Gemini API docs
+# Tier definitions based on Anthropic Claude API docs
 # ---------------------------------------------------------------------------
-TIER = "Free"  # "Free" | "Tier 1" | "Tier 2" | "Tier 3"
-MODEL_ID = "gemini-2.5-flash"
+TIER = "Tier 1"  # "Tier 1" | "Tier 2" | "Tier 3" | "Tier 4"
+MODEL_ID = "claude-3-5-sonnet-20241022"
 
-# Per-tier defaults for gemini-2.5-flash (approximate)
+# Per-tier defaults for claude-3-5-sonnet (approximate)
 _TIER_LIMITS: dict[str, dict] = {
-    "Free":   {"rpm": 30,  "rpd": 1500,  "tpm": 1_000_000},
-    "Tier 1": {"rpm": 2000, "rpd": 10_000, "tpm": 4_000_000},
-    "Tier 2": {"rpm": 4000, "rpd": 15_000, "tpm": 4_000_000},
-    "Tier 3": {"rpm": 4000, "rpd": 25_000, "tpm": 4_000_000},
+    "Tier 1": {"rpm": 50,   "rpd": 1_000,  "tpm": 40_000},
+    "Tier 2": {"rpm": 1000, "rpd": 10_000, "tpm": 400_000},
+    "Tier 3": {"rpm": 2000, "rpd": 50_000, "tpm": 800_000},
+    "Tier 4": {"rpm": 4000, "rpd": 100_000, "tpm": 2_000_000},
 }
 
-_tier_cfg = _TIER_LIMITS.get(TIER, _TIER_LIMITS["Free"])
+_tier_cfg = _TIER_LIMITS.get(TIER, _TIER_LIMITS["Tier 1"])
 RPM_LIMIT: int = _tier_cfg["rpm"]
 RPD_LIMIT: int = _tier_cfg["rpd"]
 TPM_LIMIT: int = _tier_cfg["tpm"]  # informational only
 WINDOW = 60  # seconds (RPM window)
 
-# Pacific timezone for RPD reset (Google resets at midnight PT)
-_PT = timezone(timedelta(hours=-8))
+# UTC timezone for RPD reset
+_PT = timezone(timedelta(hours=0))
 
 # Rolling timestamps of requests in current window (RPM)
 _timestamps: list[float] = []

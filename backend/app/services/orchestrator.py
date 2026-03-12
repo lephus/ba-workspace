@@ -8,7 +8,7 @@ from flask import current_app
 from app.agents.base import build_system_prompt
 from app.services.config_loader import get_config
 from app.services.document_parser import parse_document
-from app.services.gemini_client import generate_content
+from app.services.claude_client import generate_content
 
 
 AGENT_ORDER = ["alex", "emma", "sarah", "david", "paul"]

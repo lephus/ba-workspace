@@ -6,7 +6,7 @@ Accepts:
 - Structured (GPT-style): { "content_type": "text", "parts": ["part one", "part two"] }
 
 Parts are logical segments (e.g. paragraphs, bullets, sentences). We trim each part,
-drop empty ones, and join with double newline so the prompt has clear structure for Gemini.
+drop empty ones, and join with double newline so the prompt has clear structure for the LLM.
 """
 
 # Maximum number of parts to avoid abuse
