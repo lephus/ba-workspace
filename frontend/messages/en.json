@@ -224,5 +224,63 @@
             "step10Title": "Start Analyzing",
             "step10Desc": "Type your message here. Use / for quick commands and @ to mention a specific AI agent."
         }
+    },
+    "cms": {
+        "title": "CMS Integration",
+        "integration": "Payload CMS Integration",
+        "addConnection": "Add Connection",
+        "description": "Connect to Payload CMS to import data and use as context for AI analysis.",
+        "connectionList": "Connection List",
+        "noConnections": "No CMS connections yet.",
+        "noConnectionsHint": "Click \"Add Connection\" to get started.",
+        "importedData": "Imported Data",
+        "noDatasets": "No data imported yet.",
+        "aiIntegration": "AI Integration:",
+        "aiIntegrationDesc": "Imported CMS data will automatically be used as context for Gemini AI in conversations.",
+        "sync": "Sync:",
+        "syncDesc": "Click the sync button on a collection to update with the latest data from CMS.",
+        "addForm": {
+            "title": "Add New CMS Connection",
+            "namePlaceholder": "Connection name (e.g., Production CMS)",
+            "urlPlaceholder": "Base URL (e.g., https://cms.example.com)",
+            "apiKeyPlaceholder": "API Key / Bearer Token (optional)",
+            "cancel": "Cancel",
+            "testConnection": "Test Connection",
+            "createConnection": "Create Connection"
+        },
+        "connectionCard": {
+            "test": "Test",
+            "deleteConnection": "Delete connection"
+        },
+        "collections": {
+            "title": "Collections from CMS",
+            "loading": "Loading collections...",
+            "errorLoading": "Error loading collections",
+            "noCollections": "No collections found. Check the connection or URL.",
+            "import": "Import",
+            "sync": "Sync Data"
+        },
+        "dataset": {
+            "records": "records",
+            "syncedAt": "Synced",
+            "previewData": "Preview data",
+            "resync": "Re-sync",
+            "deleteDataset": "Delete dataset"
+        },
+        "aiContext": {
+            "title": "AI Data Context",
+            "description": "The data below is being used as context for Gemini AI. When you chat within this project, AI will automatically reference this data for more accurate analysis.",
+            "empty": "No data available for AI yet.",
+            "emptyHint": "Sync data from a CMS collection above so that AI can use it in conversations.",
+            "active": "AI active",
+            "tip": "This data will automatically be attached when you chat with AI in this project. Click the refresh button to update with the latest data from CMS."
+        },
+        "preview": {
+            "noData": "No data to display.",
+            "preview": "Preview"
+        },
+        "breadcrumb": {
+            "projects": "Projects"
+        }
     }
 }

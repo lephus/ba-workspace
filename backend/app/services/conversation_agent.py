@@ -129,6 +129,17 @@ def get_agent_reply(conversation_id: int, new_user_content: str) -> tuple[str, l
     except Exception as exc:
         logger.warning("Failed to inject project docs context: %s", exc)
 
+    # ── Inject CMS data context (Payload CMS) ────────────────────────
+    try:
+        conv_for_cms = conv if conv else Conversation.query.get(conversation_id)
+        if conv_for_cms:
+            from app.services.cms_context import build_cms_context
+            cms_context = build_cms_context(conv_for_cms.project_id)
+            if cms_context:
+                system_prompt = f"{system_prompt}\n\n{cms_context}"
+    except Exception as exc:
+        logger.warning("Failed to inject CMS context: %s", exc)
+
     messages = (
         Message.query.filter_by(conversation_id=conversation_id)
         .order_by(Message.created_at.asc())

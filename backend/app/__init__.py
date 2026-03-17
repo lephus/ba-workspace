@@ -18,6 +18,7 @@ SWAGGER_TEMPLATE = {
         {"name": "Messages", "description": "Messages within a conversation"},
         {"name": "Documents", "description": "Document upload and list"},
         {"name": "Analysis", "description": "Run and get analysis results"},
+        {"name": "CMS", "description": "Payload CMS integration"},
     ],
 }
 
@@ -43,6 +44,7 @@ def create_app(config=None):
     from app.api.documents import bp as documents_bp
     from app.api.analysis import bp as analysis_bp
     from app.api.api_keys import bp as api_keys_bp
+    from app.api.cms import bp as cms_bp
 
     app.register_blueprint(health_bp, url_prefix="/api/v1")
     app.register_blueprint(projects_bp, url_prefix="/api/v1/projects")
@@ -51,6 +53,7 @@ def create_app(config=None):
     app.register_blueprint(documents_bp, url_prefix="/api/v1/projects")
     app.register_blueprint(analysis_bp, url_prefix="/api/v1")
     app.register_blueprint(api_keys_bp, url_prefix="/api/v1")
+    app.register_blueprint(cms_bp, url_prefix="/api/v1/projects")
 
     # Init DB
     from app.models import db
