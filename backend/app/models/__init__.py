@@ -11,5 +11,7 @@ from app.models.pinned_message import PinnedMessage  # noqa: E402
 from app.models.document import Document  # noqa: E402
 from app.models.analysis import Analysis  # noqa: E402
 from app.models.api_key import ApiKey  # noqa: E402
+from app.models.cms_connection import CmsConnection  # noqa: E402
+from app.models.cms_dataset import CmsDataset  # noqa: E402
 
-__all__ = ["db", "Project", "Conversation", "Message", "PinnedMessage", "Document", "Analysis", "ApiKey"]
+__all__ = ["db", "Project", "Conversation", "Message", "PinnedMessage", "Document", "Analysis", "ApiKey", "CmsConnection", "CmsDataset"]

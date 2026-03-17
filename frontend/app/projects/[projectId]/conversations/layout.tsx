@@ -5,11 +5,12 @@ import { ConversationSidebar } from "@/features/conversations/components/convers
 import { useParams } from "next/navigation";
 import { useProject } from "@/features/projects/hooks";
 import Link from "next/link";
-import { ChevronRight, FolderOpen } from "lucide-react";
+import { ChevronRight, Database, FolderOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "next-intl";
 import { ApiKeyManager } from "@/features/settings/components";
 import { ConversationTour } from "@/features/tour/conversations-tour";
+import { Button } from "@/components/ui/button";
 
 export default function ConversationsLayout({
   children,
@@ -46,6 +47,12 @@ export default function ConversationsLayout({
         )}
         <div className="ml-auto flex items-center gap-2">
           <ConversationTour />
+          <Link href={`/projects/${projectId}/cms`}>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Database className="size-4" />
+              <span className="hidden sm:inline">CMS</span>
+            </Button>
+          </Link>
           <ApiKeyManager />
         </div>
       </div>

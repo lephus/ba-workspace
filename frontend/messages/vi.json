@@ -223,5 +223,63 @@
             "step10Title": "Bắt đầu phân tích",
             "step10Desc": "Nhập tin nhắn của bạn tại đây. Sử dụng / cho lệnh nhanh và @ để nhắc đến một AI agent cụ thể."
         }
+    },
+    "cms": {
+        "title": "CMS Integration",
+        "integration": "Payload CMS Integration",
+        "addConnection": "Thêm kết nối",
+        "description": "Kết nối Payload CMS để nhập dữ liệu và sử dụng làm ngữ cảnh cho AI phân tích.",
+        "connectionList": "Danh sách kết nối",
+        "noConnections": "Chưa có kết nối CMS nào.",
+        "noConnectionsHint": "Nhấn \"Thêm kết nối\" để bắt đầu.",
+        "importedData": "Dữ liệu đã nhập",
+        "noDatasets": "Chưa có dữ liệu nào được nhập.",
+        "aiIntegration": "Tích hợp AI:",
+        "aiIntegrationDesc": "Dữ liệu CMS đã nhập sẽ tự động được sử dụng làm ngữ cảnh cho Gemini AI trong các cuộc hội thoại.",
+        "sync": "Đồng bộ:",
+        "syncDesc": "Nhấn nút đồng bộ trên collection để cập nhật dữ liệu mới nhất từ CMS.",
+        "addForm": {
+            "title": "Thêm kết nối CMS mới",
+            "namePlaceholder": "Tên kết nối (vd: Production CMS)",
+            "urlPlaceholder": "Base URL (vd: https://cms.example.com)",
+            "apiKeyPlaceholder": "API Key / Bearer Token (tuỳ chọn)",
+            "cancel": "Huỷ",
+            "testConnection": "Test kết nối",
+            "createConnection": "Tạo kết nối"
+        },
+        "connectionCard": {
+            "test": "Test",
+            "deleteConnection": "Xoá kết nối"
+        },
+        "collections": {
+            "title": "Collections từ CMS",
+            "loading": "Đang tải collections...",
+            "errorLoading": "Lỗi khi tải collections",
+            "noCollections": "Không tìm thấy collection nào. Kiểm tra lại kết nối hoặc URL.",
+            "import": "Import",
+            "sync": "Đồng bộ dữ liệu"
+        },
+        "dataset": {
+            "records": "bản ghi",
+            "syncedAt": "Đồng bộ",
+            "previewData": "Xem trước dữ liệu",
+            "resync": "Đồng bộ lại",
+            "deleteDataset": "Xoá dataset"
+        },
+        "aiContext": {
+            "title": "Ngữ cảnh dữ liệu cho AI",
+            "description": "Dữ liệu bên dưới đang được sử dụng làm ngữ cảnh cho Gemini AI. Khi bạn trò chuyện trong dự án, AI sẽ tự động tham chiếu dữ liệu này để đưa ra phân tích chính xác hơn.",
+            "empty": "Chưa có dữ liệu nào cho AI.",
+            "emptyHint": "Đồng bộ dữ liệu từ collection CMS ở trên để AI có thể sử dụng trong cuộc hội thoại.",
+            "active": "AI đang dùng",
+            "tip": "Dữ liệu này sẽ tự động được đính kèm khi bạn chat với AI trong dự án. Nhấn nút làm mới để cập nhật dữ liệu mới nhất từ CMS."
+        },
+        "preview": {
+            "noData": "Không có dữ liệu để hiển thị.",
+            "preview": "Preview"
+        },
+        "breadcrumb": {
+            "projects": "Dự án"
+        }
     }
 }
