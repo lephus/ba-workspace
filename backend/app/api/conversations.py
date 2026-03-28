@@ -234,3 +234,53 @@ def delete_conversation(project_id, conversation_id):
     db.session.delete(conv)
     db.session.commit()
     return "", 204
+
+
+@bp.route("/<int:project_id>/conversations/bulk-delete", methods=["POST"])
+def bulk_delete_conversations(project_id):
+    """
+    Bulk delete conversations
+    ---
+    tags:
+      - Conversations
+    parameters:
+      - name: project_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        schema:
+          type: object
+          required:
+            - conversation_ids
+          properties:
+            conversation_ids:
+              type: array
+              items: { type: integer }
+    responses:
+      200:
+        description: Deleted count
+      400:
+        description: Invalid request
+      404:
+        description: Project not found
+    """
+    Project.query.get_or_404(project_id)
+    data = request.get_json() or {}
+    conversation_ids = data.get("conversation_ids", [])
+
+    if not conversation_ids or not isinstance(conversation_ids, list):
+        return jsonify({"error": "conversation_ids is required and must be a list"}), 400
+
+    convs = Conversation.query.filter(
+        Conversation.id.in_(conversation_ids),
+        Conversation.project_id == project_id,
+    ).all()
+
+    deleted_count = len(convs)
+    for conv in convs:
+        db.session.delete(conv)
+    db.session.commit()
+
+    return jsonify({"deleted": deleted_count})

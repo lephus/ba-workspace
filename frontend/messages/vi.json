@@ -97,6 +97,17 @@
         "createDescription": "Nhập tiêu đề để tạo cuộc hội thoại mới.",
         "deleteTitle": "Xóa cuộc hội thoại",
         "deleteConfirm": "Bạn có chắc chắn muốn xóa cuộc hội thoại \"{title}\"? Hành động này không thể hoàn tác.",
+        "bulkDelete": {
+            "title": "Xóa nhiều cuộc hội thoại",
+            "confirm": "Bạn có chắc chắn muốn xóa {count} cuộc hội thoại đã chọn? Hành động này không thể hoàn tác.",
+            "action": "Xóa {count} cuộc hội thoại",
+            "button": "Xóa đã chọn",
+            "selectMode": "Chọn nhiều",
+            "exitSelectMode": "Hủy chọn",
+            "selected": "Đã chọn {count}",
+            "selectAll": "Chọn tất cả",
+            "deselectAll": "Bỏ chọn tất cả"
+        },
         "project": "Dự án",
         "createdAt": "Ngày tạo",
         "updatedAt": "Cập nhật lần cuối",
