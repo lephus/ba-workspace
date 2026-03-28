@@ -17,6 +17,10 @@ import {
   Pin,
   PinOff,
   FileText,
+  CheckSquare,
+  Square,
+  X,
+  CheckCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,6 +46,7 @@ import { useDocuments } from "@/features/documents/hooks";
 import { DocumentListDialog } from "@/features/documents/components/document-list-dialog";
 import { ConversationDialog } from "./conversation-dialog";
 import { DeleteConversationDialog } from "./delete-conversation-dialog";
+import { DeleteMultipleConversationsDialog } from "./delete-multiple-dialog";
 
 interface ConversationSidebarProps {
   projectId: number;
@@ -76,6 +81,11 @@ export function ConversationSidebar({
   const [documentListOpen, setDocumentListOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
+
+  // Multi-select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const handleNewChat = () => {
     router.push(`/projects/${projectId}/conversations`);
@@ -114,13 +124,57 @@ export function ConversationSidebar({
     }
   };
 
+  // Multi-select handlers
+  const toggleSelectMode = () => {
+    if (selectMode) {
+      setSelectedIds(new Set());
+    }
+    setSelectMode(!selectMode);
+  };
+
+  const handleToggleSelect = (
+    e: React.MouseEvent,
+    conversationId: number,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(conversationId)) {
+        next.delete(conversationId);
+      } else {
+        next.add(conversationId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (!conversations) return;
+    setSelectedIds(new Set(conversations.map((c) => c.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const handleBulkDeleteSuccess = () => {
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  };
+
   const activeConversation =
     conversations?.find((c) => c.id === activeConversationId) ?? null;
 
   const handleGlobalKeyDown = useCallback(
     (e: globalThis.KeyboardEvent) => {
       if (!activeConversation) return;
-      if (dialogOpen || deleteDialogOpen) return;
+      if (dialogOpen || deleteDialogOpen || bulkDeleteDialogOpen) return;
 
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
@@ -151,13 +205,121 @@ export function ConversationSidebar({
         }
       }
     },
-    [activeConversation, dialogOpen, deleteDialogOpen, togglePin, ts],
+    [activeConversation, dialogOpen, deleteDialogOpen, bulkDeleteDialogOpen, togglePin, ts],
   );
 
   useEffect(() => {
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, [handleGlobalKeyDown]);
+
+  // Render a conversation item (shared between pinned and unpinned)
+  const renderConversationItem = (conversation: Conversation) => {
+    const isActive = conversation.id === activeConversationId;
+    const isSelected = selectedIds.has(conversation.id);
+
+    if (selectMode) {
+      return (
+        <button
+          key={conversation.id}
+          type="button"
+          onClick={(e) => handleToggleSelect(e, conversation.id)}
+          className={cn(
+            "group relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent min-w-0 w-full text-left",
+            isSelected && "bg-accent border border-primary/30",
+          )}
+        >
+          <span className="shrink-0">
+            {isSelected ? (
+              <CheckSquare className="size-4 text-primary" />
+            ) : (
+              <Square className="size-4 text-muted-foreground" />
+            )}
+          </span>
+          <span className="flex-1 min-w-0 truncate">
+            {conversation.title}
+          </span>
+        </button>
+      );
+    }
+
+    return (
+      <Link
+        key={conversation.id}
+        href={`/projects/${projectId}/conversations/${conversation.id}`}
+        className={cn(
+          "group relative flex items-center gap-2 rounded-lg px-3 py-2 pr-8 text-sm transition-colors hover:bg-accent min-w-0",
+          isActive && "bg-accent",
+        )}
+      >
+        <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+        <span className="flex-1 min-w-0 truncate">
+          {conversation.title}
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "absolute right-1 top-1/2 -translate-y-1/2 size-6 opacity-0 group-hover:opacity-100 transition-opacity",
+                isActive && "opacity-100",
+              )}
+              onClick={(e) => e.preventDefault()}
+            >
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="right">
+            <DropdownMenuItem
+              onClick={(e) => handlePin(e, conversation)}
+            >
+              {conversation.pinned ? (
+                <PinOff className="size-4" />
+              ) : (
+                <Pin className="size-4" />
+              )}
+              <span className="flex-1">
+                {conversation.pinned ? t("unpin") : t("pin")}
+              </span>
+              {isActive && (
+                <kbd className="ml-auto text-[10px] text-muted-foreground">
+                  F1
+                </kbd>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => handleEdit(e, conversation)}
+            >
+              <Pencil className="size-4" />
+              <span className="flex-1">{t("rename")}</span>
+              {isActive && (
+                <kbd className="ml-auto text-[10px] text-muted-foreground">
+                  F2
+                </kbd>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => handleDelete(e, conversation)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="size-4" />
+              <span className="flex-1">
+                {t("deleteTitle")
+                  .replace("Xóa ", "")
+                  .replace("Delete ", "")}
+              </span>
+              {isActive && (
+                <kbd className="ml-auto text-[10px] text-muted-foreground">
+                  F3
+                </kbd>
+              )}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -227,6 +389,30 @@ export function ConversationSidebar({
                 {documentCount > 0 ? ` (${documentCount})` : ""}
               </TooltipContent>
             </Tooltip>
+            {/* Multi-select toggle */}
+            {conversations && conversations.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={selectMode ? "default" : "ghost"}
+                    size="icon"
+                    className="size-8"
+                    onClick={toggleSelectMode}
+                  >
+                    {selectMode ? (
+                      <X className="size-4" />
+                    ) : (
+                      <CheckSquare className="size-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {selectMode
+                    ? t("bulkDelete.exitSelectMode")
+                    : t("bulkDelete.selectMode")}
+                </TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -242,6 +428,52 @@ export function ConversationSidebar({
             </Tooltip>
           </div>
         </div>
+
+        {/* Selection toolbar */}
+        {selectMode && (
+          <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/80 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground truncate">
+                {selectedIds.size > 0
+                  ? t("bulkDelete.selected", { count: selectedIds.size })
+                  : t("bulkDelete.selectMode")}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={
+                      selectedIds.size === (conversations?.length || 0)
+                        ? handleDeselectAll
+                        : handleSelectAll
+                    }
+                  >
+                    <CheckCheck className="size-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {selectedIds.size === (conversations?.length || 0)
+                    ? t("bulkDelete.deselectAll")
+                    : t("bulkDelete.selectAll")}
+                </TooltipContent>
+              </Tooltip>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs px-2"
+                disabled={selectedIds.size === 0}
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="size-3 mr-1" />
+                {t("bulkDelete.button")}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Conversation list */}
         <ScrollArea className="flex-1 min-h-0">
@@ -277,164 +509,20 @@ export function ConversationSidebar({
                       <Pin className="size-3" />
                       {t("pinned")}
                     </p>
-                    {pinnedConversations.map((conversation) => {
-                      const isActive = conversation.id === activeConversationId;
-                      return (
-                        <Link
-                          key={conversation.id}
-                          href={`/projects/${projectId}/conversations/${conversation.id}`}
-                          className={cn(
-                            "group relative flex items-center gap-2 rounded-lg px-3 py-2 pr-8 text-sm transition-colors hover:bg-accent min-w-0",
-                            isActive && "bg-accent",
-                          )}
-                        >
-                          <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="flex-1 min-w-0 truncate">
-                            {conversation.title}
-                          </span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn(
-                                  "absolute right-1 top-1/2 -translate-y-1/2 size-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                                  isActive && "opacity-100",
-                                )}
-                                onClick={(e) => e.preventDefault()}
-                              >
-                                <MoreHorizontal className="size-3.5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" side="right">
-                              <DropdownMenuItem
-                                onClick={(e) => handlePin(e, conversation)}
-                              >
-                                <PinOff className="size-4" />
-                                <span className="flex-1">{t("unpin")}</span>
-                                {isActive && (
-                                  <kbd className="ml-auto text-[10px] text-muted-foreground">
-                                    F1
-                                  </kbd>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => handleEdit(e, conversation)}
-                              >
-                                <Pencil className="size-4" />
-                                <span className="flex-1">{t("rename")}</span>
-                                {isActive && (
-                                  <kbd className="ml-auto text-[10px] text-muted-foreground">
-                                    F2
-                                  </kbd>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => handleDelete(e, conversation)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="size-4" />
-                                <span className="flex-1">
-                                  {t("deleteTitle")
-                                    .replace("Xóa ", "")
-                                    .replace("Delete ", "")}
-                                </span>
-                                {isActive && (
-                                  <kbd className="ml-auto text-[10px] text-muted-foreground">
-                                    F3
-                                  </kbd>
-                                )}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </Link>
-                      );
-                    })}
+                    {pinnedConversations.map(renderConversationItem)}
                     {unpinnedConversations.length > 0 && (
                       <div className="my-1 border-t" />
                     )}
                   </>
                 )}
-                {unpinnedConversations.map((conversation) => {
-                  const isActive = conversation.id === activeConversationId;
-                  return (
-                    <Link
-                      key={conversation.id}
-                      href={`/projects/${projectId}/conversations/${conversation.id}`}
-                      className={cn(
-                        "group relative flex items-center gap-2 rounded-lg px-3 py-2 pr-8 text-sm transition-colors hover:bg-accent min-w-0",
-                        isActive && "bg-accent",
-                      )}
-                    >
-                      <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 min-w-0 truncate">
-                        {conversation.title}
-                      </span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={cn(
-                              "absolute right-1 top-1/2 -translate-y-1/2 size-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                              isActive && "opacity-100",
-                            )}
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            <MoreHorizontal className="size-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" side="right">
-                          <DropdownMenuItem
-                            onClick={(e) => handlePin(e, conversation)}
-                          >
-                            <Pin className="size-4" />
-                            <span className="flex-1">{t("pin")}</span>
-                            {isActive && (
-                              <kbd className="ml-auto text-[10px] text-muted-foreground">
-                                F1
-                              </kbd>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => handleEdit(e, conversation)}
-                          >
-                            <Pencil className="size-4" />
-                            <span className="flex-1">{t("rename")}</span>
-                            {isActive && (
-                              <kbd className="ml-auto text-[10px] text-muted-foreground">
-                                F2
-                              </kbd>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => handleDelete(e, conversation)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="size-4" />
-                            <span className="flex-1">
-                              {t("deleteTitle")
-                                .replace("Xóa ", "")
-                                .replace("Delete ", "")}
-                            </span>
-                            {isActive && (
-                              <kbd className="ml-auto text-[10px] text-muted-foreground">
-                                F3
-                              </kbd>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </Link>
-                  );
-                })}
+                {unpinnedConversations.map(renderConversationItem)}
               </>
             )}
           </div>
         </ScrollArea>
 
         {/* Keyboard shortcut hints */}
-        {activeConversation && (
+        {activeConversation && !selectMode && (
           <div className="shrink-0 border-t px-3 py-2">
             <p className="text-[10px] text-muted-foreground font-medium mb-1">
               {ts("shortcuts")}
@@ -496,6 +584,14 @@ export function ConversationSidebar({
         projectId={projectId}
         conversation={selectedConversation}
         onSuccess={handleConversationDeleted}
+      />
+
+      <DeleteMultipleConversationsDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        projectId={projectId}
+        conversationIds={Array.from(selectedIds)}
+        onSuccess={handleBulkDeleteSuccess}
       />
 
       <DocumentListDialog

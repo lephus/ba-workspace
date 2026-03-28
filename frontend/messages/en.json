@@ -97,6 +97,17 @@
         "createDescription": "Enter a title to create a new conversation.",
         "deleteTitle": "Delete Conversation",
         "deleteConfirm": "Are you sure you want to delete the conversation \"{title}\"? This action cannot be undone.",
+        "bulkDelete": {
+            "title": "Delete Multiple Conversations",
+            "confirm": "Are you sure you want to delete {count} selected conversations? This action cannot be undone.",
+            "action": "Delete {count} conversations",
+            "button": "Delete Selected",
+            "selectMode": "Select Multiple",
+            "exitSelectMode": "Cancel Selection",
+            "selected": "{count} selected",
+            "selectAll": "Select All",
+            "deselectAll": "Deselect All"
+        },
         "project": "Project",
         "createdAt": "Created At",
         "updatedAt": "Last Updated",

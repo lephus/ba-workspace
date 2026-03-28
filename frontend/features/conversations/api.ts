@@ -122,6 +122,30 @@ export async function deleteConversationApi(
   }
 }
 
+// POST /projects/:projectId/conversations/bulk-delete
+export async function deleteMultipleConversationsApi(
+  projectId: number,
+  conversationIds: number[]
+): Promise<{ deleted: number }> {
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/conversations/bulk-delete`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation_ids: conversationIds }),
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Không tìm thấy dự án");
+    }
+    throw new Error("Không thể xóa các cuộc hội thoại");
+  }
+
+  return response.json();
+}
+
 // PUT /projects/:projectId/conversations/:conversationId/pin
 export async function pinConversationApi(
   projectId: number,

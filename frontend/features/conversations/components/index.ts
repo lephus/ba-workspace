@@ -1,6 +1,7 @@
 export { ConversationList } from "./conversation-list";
 export { ConversationDialog } from "./conversation-dialog";
 export { DeleteConversationDialog } from "./delete-conversation-dialog";
+export { DeleteMultipleConversationsDialog } from "./delete-multiple-dialog";
 export { ConversationSidebar } from "./conversation-sidebar";
 export { ChatArea } from "./chat-area";
 export { NewChatArea } from "./new-chat-area";

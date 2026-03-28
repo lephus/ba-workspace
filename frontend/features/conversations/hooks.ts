@@ -9,6 +9,7 @@ import {
   createConversationApi,
   updateConversationApi,
   deleteConversationApi,
+  deleteMultipleConversationsApi,
   pinConversationApi,
   unpinConversationApi,
 } from "./api";
@@ -108,6 +109,35 @@ export function useDeleteConversation(projectId: number) {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Xóa cuộc hội thoại thất bại");
+    },
+  });
+}
+
+// Hook xóa nhiều conversations
+export function useDeleteMultipleConversations(projectId: number) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const params = useParams();
+  const activeConversationId = params.conversationId
+    ? Number(params.conversationId)
+    : null;
+
+  return useMutation({
+    mutationFn: (conversationIds: number[]) =>
+      deleteMultipleConversationsApi(projectId, conversationIds),
+    onSuccess: (_data, deletedIds) => {
+      queryClient.invalidateQueries({
+        queryKey: conversationsKey(projectId),
+      });
+      toast.success(`Đã xóa ${_data.deleted} cuộc hội thoại!`);
+
+      // If the active conversation was in the deleted list, navigate back
+      if (activeConversationId && deletedIds.includes(activeConversationId)) {
+        router.push(`/projects/${projectId}/conversations`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Xóa các cuộc hội thoại thất bại");
     },
   });
 }
